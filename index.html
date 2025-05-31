@@ -5,7 +5,7 @@
             <h1 class="logo">DashLink</h1>
             <p class="tagline">나만의 웹 링크를 어디서든, 한 눈에</p>
             <div class="social-login-buttons">
-                <button id="general-login-btn" class="btn btn-social btn-general">
+                <button id="general-login-btn" class="btn btn-social btn-general" aria-expanded="false" aria-controls="general-login-form">
                     <span class="material-icons">account_circle</span>
                     일반 로그인
                 </button>
@@ -13,12 +13,14 @@
                     <div class="form-group">
                         <label for="login-email">이메일</label>
                         <input type="email" id="login-email" placeholder="이메일 주소" required>
+                        <p class="error-message hidden" aria-live="polite">유효한 이메일을 입력해주세요.</p>
                     </div>
                     <div class="form-group">
                         <label for="login-password">비밀번호</label>
                         <input type="password" id="login-password" placeholder="비밀번호" required>
+                        <p class="error-message hidden" aria-live="polite">비밀번호를 입력해주세요.</p>
                     </div>
-                    <button id="login-submit-btn" class="btn btn-primary">로그인</button>
+                    <button id="login-submit-btn" class="btn btn-primary" disabled>로그인</button>
                 </div>
                 <button class="btn btn-social btn-google">
                     <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
@@ -32,24 +34,35 @@
     <!-- Main Dashboard Screen -->
     <div id="main-dashboard-screen" class="screen">
         <header class="header">
-            <h1 id="dashboard-main-title" class="main-title">DashLink</h1> <!-- Fixed to DashLink -->
+            <h1 id="dashboard-main-title" class="main-title">DashLink</h1>
             <div class="header-actions">
-                <button id="add-link-global-btn" class="btn btn-icon">
-                    <span class="material-icons">add</span>
-                    <span>새 링크</span>
-                </button>
-                <button id="add-dashboard-global-btn" class="btn btn-icon">
-                    <span class="material-icons">add_box</span>
-                    <span>새 대시보드</span>
-                </button>
-                <button id="logout-btn" class="btn btn-text">
+                <div class="icon-buttons-group">
+                    <button id="search-btn" class="btn btn-icon-round" title="검색" aria-label="검색" aria-expanded="false" aria-controls="search-bar-container">
+                        <span class="material-icons">search</span>
+                    </button>
+                    <button id="settings-btn" class="btn btn-icon-round" title="설정" aria-label="설정" aria-expanded="false" aria-controls="settings-modal">
+                        <span class="material-icons">settings</span>
+                    </button>
+                    <button id="add-link-global-btn" class="btn btn-icon-round" title="새 링크 추가" aria-label="새 링크 추가">
+                        <span class="material-icons">add_link</span>
+                    </button>
+                    <button id="add-dashboard-global-btn" class="btn btn-icon-round" title="새 대시보드 추가" aria-label="새 대시보드 추가">
+                        <span class="material-icons">add_box</span>
+                    </button>
+                </div>
+                <button id="logout-btn" class="btn btn-text" aria-label="로그아웃">
                     <span class="material-icons">logout</span>
                     <span>로그아웃</span>
                 </button>
             </div>
         </header>
 
-        <div id="dashboards-container" class="dashboards-container">
+        <div id="search-bar-container" class="search-bar-container hidden" role="search">
+            <input type="text" id="search-input" placeholder="현재 대시보드 링크 검색..." aria-label="링크 검색 입력" />
+            <button id="search-close-btn" class="btn btn-text" aria-label="검색 닫기"><span class="material-icons">close</span></button>
+        </div>
+
+        <div id="dashboards-container" class="dashboards-container" role="region" aria-label="대시보드 목록">
             <!-- Dashboards (cards) will be rendered here by JS -->
             <div class="empty-state" id="empty-dashboards-state">
                 <span class="material-icons">dashboard</span>
@@ -58,23 +71,26 @@
             </div>
         </div>
 
-        <div id="dashboard-pagination" class="dashboard-pagination">
+        <div id="dashboard-pagination" class="dashboard-pagination" role="tablist" aria-label="대시보드 페이지네이션">
             <!-- Pagination dots will be rendered here by JS for mobile -->
         </div>
     </div>
 
     <!-- Modals -->
-    <div id="link-modal" class="modal">
+    <div id="link-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
         <div class="modal-content">
             <h2 id="link-modal-title">새 링크 추가</h2>
             <form id="link-form">
                 <div class="form-group">
                     <label for="link-url">URL</label>
                     <input type="url" id="link-url" placeholder="https://www.example.com" required>
+                    <p class="error-message hidden" aria-live="polite">유효한 URL을 입력해주세요.</p>
                 </div>
                 <div class="form-group">
                     <label for="link-title">제목</label>
-                    <input type="text" id="link-title" placeholder="링크 제목 (자동 추출 예정)">
+                    <input type="text" id="link-title" placeholder="링크 제목 (자동 추출 예정)" required>
+                    <span id="favicon-loading-spinner" class="loading-spinner hidden" role="status" aria-label="정보 로딩 중"></span>
+                    <p class="error-message hidden" aria-live="polite">제목을 입력해주세요.</p>
                 </div>
                 <div class="form-group">
                     <label for="link-favicon">Favicon URL (선택)</label>
@@ -83,19 +99,20 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="link-modal-cancel-btn" class="btn btn-text">취소</button>
-                    <button type="submit" id="link-modal-save-btn" class="btn btn-primary">저장</button>
+                    <button type="submit" id="link-modal-save-btn" class="btn btn-primary" disabled>저장</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="dashboard-modal" class="modal">
+    <div id="dashboard-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-modal-title">
         <div class="modal-content">
             <h2 id="dashboard-modal-title">새 대시보드 추가</h2>
             <form id="dashboard-form">
                 <div class="form-group">
                     <label for="dashboard-name">대시보드 이름</label>
                     <input type="text" id="dashboard-name" placeholder="예: 업무용 링크 모음" required>
+                    <p class="error-message hidden" aria-live="polite">대시보드 이름을 입력해주세요.</p>
                 </div>
                 <div class="form-group">
                     <label for="dashboard-description">설명 (선택)</label>
@@ -103,12 +120,53 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="dashboard-modal-cancel-btn" class="btn btn-text">취소</button>
-                    <button type="submit" id="dashboard-modal-save-btn" class="btn btn-primary">저장</button>
+                    <button type="submit" id="dashboard-modal-save-btn" class="btn btn-primary" disabled>저장</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Settings Modal/Popover -->
+    <div id="settings-modal" class="modal settings-popover" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+        <div class="modal-content">
+            <h2 id="settings-modal-title">설정</h2>
+            <div class="settings-group">
+                <h3>테마</h3>
+                <div class="theme-options" role="radiogroup" aria-label="테마 선택">
+                    <button class="theme-toggle" data-theme="light" role="radio" aria-checked="true">라이트 모드</button>
+                    <button class="theme-toggle" data-theme="dark" role="radio" aria-checked="false">다크 모드</button>
+                </div>
+                <h3>메인 색상</h3>
+                <div class="color-options" role="radiogroup" aria-label="메인 색상 선택">
+                    <div class="color-swatch active" data-color="#00C49F" style="background-color: #00C49F;" title="민트" role="radio" aria-checked="true" tabindex="0"></div>
+                    <div class="color-swatch" data-color="#3182F6" style="background-color: #3182F6;" title="블루" role="radio" aria-checked="false" tabindex="-1"></div>
+                    <div class="color-swatch" data-color="#6F42C1" style="background-color: #6F42C1;" title="퍼플" role="radio" aria-checked="false" tabindex="-1"></div>
+                    <div class="color-swatch" data-color="#FF7F00" style="background-color: #FF7F00;" title="오렌지" role="radio" aria-checked="false" tabindex="-1"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="settings-modal-close-btn" class="btn btn-primary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Tutorial Modal -->
+    <div id="tutorial-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+        <div class="modal-content">
+            <h2 id="tutorial-title">DashLink 사용 가이드</h2>
+            <div id="tutorial-content">
+                <!-- Tutorial steps will be dynamically inserted here -->
+            </div>
+            <div class="modal-actions tutorial-actions">
+                <button id="tutorial-skip-btn" class="btn btn-text">건너뛰기</button>
+                <button id="tutorial-prev-btn" class="btn btn-primary hidden">이전</button>
+                <button id="tutorial-next-btn" class="btn btn-primary">다음</button>
+                <button id="tutorial-start-btn" class="btn btn-primary hidden">DashLink 시작하기</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 </div>
