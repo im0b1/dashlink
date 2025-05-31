@@ -1,3 +1,5 @@
+// Include SortableJS library: <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
     const app = document.getElementById('app');
@@ -14,13 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
-    const dashboardMainTitle = document.getElementById('dashboard-main-title'); // Now fixed to "DashLink"
+    const dashboardMainTitle = document.getElementById('dashboard-main-title');
     const addLinkGlobalBtn = document.getElementById('add-link-global-btn');
     const addDashboardGlobalBtn = document.getElementById('add-dashboard-global-btn');
     const dashboardsContainer = document.getElementById('dashboards-container');
     const emptyDashboardsState = document.getElementById('empty-dashboards-state');
     const emptyAddDashboardBtn = document.getElementById('empty-add-dashboard-btn');
     const dashboardPagination = document.getElementById('dashboard-pagination');
+
+    const searchBtn = document.getElementById('search-btn');
+    const searchBarContainer = document.getElementById('search-bar-container');
+    const searchInput = document.getElementById('search-input');
+    const searchCloseBtn = document.getElementById('search-close-btn');
 
     // Modals
     const linkModal = document.getElementById('link-modal');
@@ -30,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkTitleInput = document.getElementById('link-title');
     const linkFaviconInput = document.getElementById('link-favicon');
     const linkModalCancelBtn = document.getElementById('link-modal-cancel-btn');
+    const linkModalSaveBtn = document.getElementById('link-modal-save-btn');
+    const faviconLoadingSpinner = document.getElementById('favicon-loading-spinner');
 
     const dashboardModal = document.getElementById('dashboard-modal');
     const dashboardModalTitle = document.getElementById('dashboard-modal-title');
@@ -37,6 +46,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardNameInput = document.getElementById('dashboard-name');
     const dashboardDescriptionInput = document.getElementById('dashboard-description');
     const dashboardModalCancelBtn = document.getElementById('dashboard-modal-cancel-btn');
+    const dashboardModalSaveBtn = document.getElementById('dashboard-modal-save-btn');
+
+    // Settings
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsModalCloseBtn = document.getElementById('settings-modal-close-btn');
+    const themeToggles = document.querySelectorAll('.theme-toggle');
+    const colorSwatches = document.querySelectorAll('.color-swatch');
+
+    // Tutorial
+    const tutorialModal = document.getElementById('tutorial-modal');
+    const tutorialContent = document.getElementById('tutorial-content');
+    const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
+    const tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
+    const tutorialNextBtn = document.getElementById('tutorial-next-btn');
+    const tutorialStartBtn = document.getElementById('tutorial-start-btn');
 
     const toastContainer = document.getElementById('toast-container');
 
@@ -45,7 +70,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLoggedIn = false;
     let editingLinkId = null;
     let editingDashboardId = null;
-    let currentDashboardIndex = 0; // Index of the currently visible dashboard on mobile
+    let currentDashboardIndex = 0;
+    let currentTheme = localStorage.getItem('dashLinkTheme') || 'light';
+    let currentPrimaryColor = localStorage.getItem('dashLinkPrimaryColor') || '#00C49F';
+    let hasSeenTutorial = localStorage.getItem('hasSeenDashLinkTutorial') === 'true';
+    let currentTutorialStep = 0;
+
+    const tutorialSteps = [
+        {
+            title: 'DashLink에 오신 것을 환영합니다!',
+            content: 'DashLink는 공용 컴퓨터에서도 나만의 링크를 편리하게 관리할 수 있도록 도와줍니다. 이제 주요 기능을 알아볼까요?'
+        },
+        {
+            title: '대시보드 스와이프',
+            content: '각 카드는 하나의 "대시보드"입니다. 모바일에서는 좌우로 스와이프하여 다른 대시보드로 이동할 수 있습니다.',
+            image: 'https://via.placeholder.com/400x200?text=Dashboard+Swipe' // Placeholder image
+        },
+        {
+            title: '링크 추가 및 관리',
+            content: '각 대시보드 하단의 "새 링크 추가" 버튼을 눌러 링크를 추가할 수 있습니다. 추가된 링크는 클릭하여 이동하거나, 마우스 오버 시 나타나는 편집/삭제 버튼으로 관리할 수 있습니다.',
+            image: 'https://via.placeholder.com/400x200?text=Add+Link'
+        },
+        {
+            title: '드래그 앤 드롭 정렬',
+            content: '링크 아이템을 길게 누르거나 대시보드 헤더를 잡고 드래그하여 순서를 바꾸거나 다른 대시보드로 옮길 수 있습니다.',
+            image: 'https://via.placeholder.com/400x200?text=Drag+Drop'
+        },
+        {
+            title: '검색 및 설정',
+            content: '우측 상단의 돋보기 아이콘으로 링크를 검색하고, 톱니바퀴 아이콘으로 다크 모드나 테마 색상을 변경할 수 있습니다.',
+            image: 'https://via.placeholder.com/400x200?text=Search+Settings'
+        }
+    ];
+
 
     // --- Utility Functions ---
 
@@ -99,9 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI Rendering Functions ---
 
-    const renderDashboards = () => {
-        dashboardsContainer.innerHTML = ''; // Clear existing dashboards
-        dashboardPagination.innerHTML = ''; // Clear existing pagination dots
+    const renderDashboards = (filterText = '') => {
+        dashboardsContainer.innerHTML = '';
+        dashboardPagination.innerHTML = '';
 
         if (dashboards.length === 0) {
             emptyDashboardsState.style.display = 'flex';
@@ -109,14 +166,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         } else {
             emptyDashboardsState.style.display = 'none';
-            // Only show pagination on mobile (handled by CSS media query)
-            dashboardPagination.style.display = 'flex';
+            dashboardPagination.style.display = 'flex'; // Display pagination only if dashboards exist
         }
 
         dashboards.forEach((dashboard, index) => {
             const dashboardCard = document.createElement('div');
             dashboardCard.className = 'dashboard-card';
             dashboardCard.dataset.dashboardId = dashboard.id;
+            dashboardCard.setAttribute('role', 'region');
+            dashboardCard.setAttribute('aria-label', `${dashboard.name} 대시보드`);
 
             const linkListId = `links-list-${dashboard.id}`;
 
@@ -127,57 +185,66 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="dashboard-card-description">${dashboard.description || '설명 없음'}</p>
                     </div>
                     <div class="dashboard-card-actions">
-                        <button class="btn-action edit-dashboard-btn" title="대시보드 편집"><span class="material-icons">edit</span></button>
-                        <button class="btn-action delete-dashboard-btn" title="대시보드 삭제"><span class="material-icons">delete</span></button>
+                        <button class="btn-action edit-dashboard-btn" title="대시보드 편집" aria-label="대시보드 편집" data-dashboard-id="${dashboard.id}"><span class="material-icons">edit</span></button>
+                        <button class="btn-action delete-dashboard-btn" title="대시보드 삭제" aria-label="대시보드 삭제" data-dashboard-id="${dashboard.id}"><span class="material-icons">delete</span></button>
                     </div>
                 </div>
-                <ul id="${linkListId}" class="links-list">
+                <ul id="${linkListId}" class="links-list" data-dashboard-id="${dashboard.id}" role="list" aria-label="${dashboard.name} 링크 목록">
                     <!-- Links for this dashboard -->
                 </ul>
-                <button class="add-link-card-btn" data-dashboard-id="${dashboard.id}">
+                <button class="add-link-card-btn" data-dashboard-id="${dashboard.id}" aria-label="새 링크 추가">
                     <span class="material-icons">add</span>
                     새 링크 추가
                 </button>
             `;
             dashboardsContainer.appendChild(dashboardCard);
 
-            renderLinksForDashboard(dashboard.id, linkListId);
+            renderLinksForDashboard(dashboard.id, linkListId, filterText);
 
-            // Create pagination dot for mobile
             const dot = document.createElement('div');
             dot.className = `pagination-dot ${index === currentDashboardIndex ? 'active' : ''}`;
             dot.dataset.index = index;
+            dot.setAttribute('role', 'tab');
+            dot.setAttribute('aria-controls', `dashboard-${dashboard.id}`); // Link to dashboard card for a11y
+            dot.setAttribute('aria-selected', index === currentDashboardIndex);
+            dot.setAttribute('tabindex', index === currentDashboardIndex ? '0' : '-1'); // Only current dot is tabbable
             dashboardPagination.appendChild(dot);
         });
 
         // Set scroll position to current dashboard index
-        scrollToDashboard(currentDashboardIndex, false); // false for no smooth scroll on initial render
-
-        addEventListenersToDashboardCards(); // Re-attach event listeners
-        updatePaginationDots(); // Ensure dots are correct after rendering
+        scrollToDashboard(currentDashboardIndex, false);
+        updatePaginationDots();
+        initializeSortable(); // Re-initialize SortableJS after rendering
     };
 
-    const renderLinksForDashboard = (dashboardId, containerId) => {
+    const renderLinksForDashboard = (dashboardId, containerId, filterText = '') => {
         const dashboard = dashboards.find(d => d.id === dashboardId);
         if (!dashboard) return;
 
         const linksList = document.getElementById(containerId);
         if (!linksList) return;
 
-        linksList.innerHTML = ''; // Clear existing links
+        linksList.innerHTML = '';
 
-        if (dashboard.links.length === 0) {
+        const filteredLinks = dashboard.links.filter(link =>
+            link.title.toLowerCase().includes(filterText.toLowerCase()) ||
+            link.url.toLowerCase().includes(filterText.toLowerCase())
+        );
+
+        if (filteredLinks.length === 0) {
             linksList.innerHTML = `
                 <li class="empty-state-link">
-                    <p>아직 링크가 없어요.</p>
+                    <p>검색 결과가 없거나<br>아직 링크가 없어요.</p>
                 </li>
             `;
         } else {
-            dashboard.links.forEach(link => {
+            filteredLinks.forEach(link => {
                 const linkItem = document.createElement('li');
                 linkItem.className = 'link-item';
                 linkItem.dataset.linkId = link.id;
-                linkItem.dataset.url = link.url; // Store URL for direct navigation
+                linkItem.dataset.url = link.url;
+                linkItem.setAttribute('role', 'listitem');
+                linkItem.setAttribute('tabindex', '0'); // Make list item tabbable
 
                 const faviconHtml = link.icon ? `<img src="${link.icon}" alt="${link.title} favicon">` : `<span class="material-icons">link</span>`;
 
@@ -187,8 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="link-item-title" title="${link.title}">${link.title}</div>
                     <div class="link-item-actions">
-                        <button class="btn-action edit-link-btn" title="편집"><span class="material-icons">edit</span></button>
-                        <button class="btn-action delete-link-btn" title="삭제"><span class="material-icons">delete</span></button>
+                        <button class="btn-action edit-link-btn" title="편집" aria-label="${link.title} 링크 편집" data-link-id="${link.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">edit</span></button>
+                        <button class="btn-action delete-link-btn" title="삭제" aria-label="${link.title} 링크 삭제" data-link-id="${link.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">delete</span></button>
                     </div>
                 `;
                 linksList.appendChild(linkItem);
@@ -196,49 +263,135 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // No longer needed as main title is fixed to "DashLink"
-    // const updateMainTitle = () => {
-    //     if (dashboards.length > 0) {
-    //         dashboardMainTitle.textContent = dashboards[currentDashboardIndex]?.name || 'DashLink';
-    //     } else {
-    //         dashboardMainTitle.textContent = 'DashLink';
-    //     }
-    // };
-
     const updatePaginationDots = () => {
         const dots = dashboardPagination.querySelectorAll('.pagination-dot');
         dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === currentDashboardIndex);
+            const isActive = (index === currentDashboardIndex);
+            dot.classList.toggle('active', isActive);
+            dot.setAttribute('aria-selected', isActive);
+            dot.setAttribute('tabindex', isActive ? '0' : '-1');
         });
     };
 
     const scrollToDashboard = (index, smooth = true) => {
-        if (!dashboardsContainer.children[index]) return; // Ensure element exists
+        if (!dashboardsContainer.children[index]) {
+            if (dashboards.length > 0) {
+                currentDashboardIndex = Math.max(0, Math.min(index, dashboards.length - 1));
+            } else {
+                currentDashboardIndex = 0;
+            }
+            index = currentDashboardIndex;
+            if (!dashboardsContainer.children[index]) return;
+        }
 
         const scrollOptions = {
             left: dashboardsContainer.children[index].offsetLeft,
             behavior: smooth ? 'smooth' : 'auto'
         };
         dashboardsContainer.scrollTo(scrollOptions);
+        
+        // After scroll, ensure focus is on the current dashboard (for A11y)
+        // This might be tricky with SortableJS, but worth trying
+        const currentCard = dashboardsContainer.children[index];
+        if (currentCard) {
+            currentCard.focus(); // Set focus to the current dashboard card
+        }
     };
 
+    const applyTheme = (theme) => {
+        document.body.classList.toggle('dark-mode', theme === 'dark');
+        localStorage.setItem('dashLinkTheme', theme);
+        currentTheme = theme;
+        themeToggles.forEach(toggle => {
+            const isActive = (toggle.dataset.theme === theme);
+            toggle.classList.toggle('active', isActive);
+            toggle.setAttribute('aria-checked', isActive);
+            toggle.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+    };
+
+    const applyPrimaryColor = (color) => {
+        document.documentElement.style.setProperty('--primary-color', color);
+        
+        const hexToRgb = hex => hex.match(/\w\w/g).map(x => parseInt(x, 16));
+        const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('');
+        
+        const [r, g, b] = hexToRgb(color);
+        const lightR = Math.min(255, r + (255 - r) * 0.7);
+        const lightG = Math.min(255, g + (255 - g) * 0.7);
+        const lightB = Math.min(255, b + (255 - b) * 0.7);
+
+        document.documentElement.style.setProperty('--primary-light', rgbToHex(lightR, lightG, lightB));
+        
+        localStorage.setItem('dashLinkPrimaryColor', color);
+        currentPrimaryColor = color;
+
+        colorSwatches.forEach(swatch => {
+            const isActive = (swatch.dataset.color === color);
+            swatch.classList.toggle('active', isActive);
+            swatch.setAttribute('aria-checked', isActive);
+            swatch.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+    };
+
+
     // --- Modal Functions ---
+    let lastFocusedElement = null; // To restore focus after modal closes
+
+    const trapFocus = (modalElement) => {
+        const focusableElements = modalElement.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length === 0) return;
+
+        const firstFocusableEl = focusableElements[0];
+        const lastFocusableEl = focusableElements[focusableElements.length - 1];
+
+        modalElement.addEventListener('keydown', function(e) {
+            const isTabPressed = (e.key === 'Tab');
+            if (!isTabPressed) return;
+
+            if (e.shiftKey) { // if shift key pressed for shift + tab
+                if (document.activeElement === firstFocusableEl) {
+                    lastFocusableEl.focus(); // add focus to the last focusable element
+                    e.preventDefault();
+                }
+            } else { // if tab key is pressed
+                if (document.activeElement === lastFocusableEl) {
+                    firstFocusableEl.focus(); // add focus to the first focusable element
+                    e.preventDefault();
+                }
+            }
+        });
+        firstFocusableEl.focus(); // Set initial focus
+    };
 
     const openModal = (modalElement) => {
+        lastFocusedElement = document.activeElement; // Save focus
         modalElement.classList.add('active');
+        trapFocus(modalElement);
     };
 
     const closeModal = (modalElement) => {
         modalElement.classList.remove('active');
+        if (lastFocusedElement) {
+            lastFocusedElement.focus(); // Restore focus
+            lastFocusedElement = null;
+        }
     };
 
     const openLinkModal = (type, link = null) => {
-        linkForm.reset(); // Clear form
-        editingLinkId = null; // Reset editing state
+        linkForm.reset();
+        editingLinkId = null;
+        linkUrlInput.classList.remove('invalid');
+        linkTitleInput.classList.remove('invalid');
+        linkForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
+        linkModalSaveBtn.disabled = true;
 
         if (type === 'add') {
             linkModalTitle.textContent = '새 링크 추가';
-            linkFaviconInput.value = ''; // Ensure favicon is empty on add
+            linkFaviconInput.value = '';
         } else if (type === 'edit' && link) {
             linkModalTitle.textContent = '링크 편집';
             editingLinkId = link.id;
@@ -247,16 +400,29 @@ document.addEventListener('DOMContentLoaded', () => {
             linkFaviconInput.value = link.icon || '';
         }
         openModal(linkModal);
+        setupFormValidation(linkForm, linkModalSaveBtn);
     };
 
     const closeLinkModal = () => {
         closeModal(linkModal);
         editingLinkId = null;
+        linkUrlInput.classList.remove('invalid');
+        linkTitleInput.classList.remove('invalid');
+        linkForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
     };
 
     const openDashboardModal = (type, dashboard = null) => {
         dashboardForm.reset();
         editingDashboardId = null;
+        dashboardNameInput.classList.remove('invalid');
+        dashboardForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
+        dashboardModalSaveBtn.disabled = true;
 
         if (type === 'add') {
             dashboardModalTitle.textContent = '새 대시보드 추가';
@@ -267,11 +433,17 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardDescriptionInput.value = dashboard.description || '';
         }
         openModal(dashboardModal);
+        setupFormValidation(dashboardForm, dashboardModalSaveBtn);
     };
 
     const closeDashboardModal = () => {
         closeModal(dashboardModal);
         editingDashboardId = null;
+        dashboardNameInput.classList.remove('invalid');
+        dashboardForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
     };
 
     // --- Toast Message Function ---
@@ -282,87 +454,176 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.textContent = message;
         toastContainer.appendChild(toast);
 
+        // Announce for screen readers
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
         setTimeout(() => {
             toast.remove();
         }, 3000);
+    };
+
+    // --- Form Validation Functions ---
+
+    const validateForm = (formElement) => {
+        let isValid = true;
+        const inputs = formElement.querySelectorAll('input[required], textarea[required]');
+
+        inputs.forEach(input => {
+            const errorMsg = input.nextElementSibling;
+            // Check if it's actually an error message element
+            const isErrorMessageElement = errorMsg && errorMsg.classList.contains('error-message');
+
+            if (input.value.trim() === '') {
+                input.classList.add('invalid');
+                if (isErrorMessageElement) {
+                    errorMsg.textContent = `${input.previousElementSibling.textContent}을(를) 입력해주세요.`;
+                    errorMsg.classList.add('visible');
+                    errorMsg.style.height = `${errorMsg.scrollHeight}px`;
+                }
+                isValid = false;
+            } else {
+                input.classList.remove('invalid');
+                if (isErrorMessageElement) {
+                    errorMsg.classList.remove('visible');
+                    errorMsg.style.height = '0';
+                }
+            }
+
+            if (input.type === 'url' && input.value.trim() !== '' && !input.classList.contains('invalid')) {
+                try {
+                    new URL(input.value.trim());
+                    input.classList.remove('invalid');
+                    if (isErrorMessageElement) {
+                        errorMsg.classList.remove('visible');
+                        errorMsg.style.height = '0';
+                    }
+                } catch (e) {
+                    input.classList.add('invalid');
+                    if (isErrorMessageElement) {
+                        errorMsg.textContent = '유효한 URL 형식이어야 합니다.';
+                        errorMsg.classList.add('visible');
+                        errorMsg.style.height = `${errorMsg.scrollHeight}px`;
+                    }
+                    isValid = false;
+                }
+            }
+        });
+        return isValid;
+    };
+
+    const setupFormValidation = (formElement, saveButton) => {
+        const inputs = formElement.querySelectorAll('input[required], textarea[required]');
+
+        const checkFormValidity = () => {
+            saveButton.disabled = !validateForm(formElement);
+        };
+
+        inputs.forEach(input => {
+            input.addEventListener('input', checkFormValidity);
+            input.addEventListener('blur', checkFormValidity);
+        });
+
+        checkFormValidity(); // Initial check
     };
 
     // --- Event Handlers ---
 
     // General Login Button Toggle
     generalLoginBtn.addEventListener('click', () => {
-        generalLoginForm.classList.toggle('visible');
-        if (generalLoginForm.classList.contains('visible')) {
-            // Set explicit height for smooth transition
-            generalLoginForm.style.height = `${generalLoginForm.scrollHeight + 20}px`; // Add some buffer
+        const isVisible = generalLoginForm.classList.toggle('visible');
+        generalLoginBtn.setAttribute('aria-expanded', isVisible);
+        if (isVisible) {
+            generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
             loginEmailInput.focus();
         } else {
             generalLoginForm.style.height = '0';
         }
+        setupFormValidation(generalLoginForm, loginSubmitBtn);
     });
 
     // General Login Submission (Basic validation for prototype)
     loginSubmitBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const email = loginEmailInput.value.trim();
-        const password = loginPasswordInput.value.trim();
-
-        if (email && password) {
-            // Simulate successful login
-            isLoggedIn = true;
-            localStorage.setItem('isLoggedInDashLink', 'true');
-            loginScreen.classList.remove('active');
-            mainDashboardScreen.classList.add('active');
-            showToast('일반 로그인 성공!');
-            renderDashboards();
-            generalLoginForm.classList.remove('visible'); // Hide form after login
-            generalLoginForm.style.height = '0';
-        } else {
-            showToast('이메일과 비밀번호를 입력해주세요.', 'error');
+        if (!validateForm(generalLoginForm)) {
+            showToast('로그인 정보를 올바르게 입력해주세요.', 'error');
+            return;
         }
+
+        isLoggedIn = true;
+        localStorage.setItem('isLoggedInDashLink', 'true');
+        loginScreen.classList.remove('active');
+        mainDashboardScreen.classList.add('active');
+        showToast('일반 로그인 성공!');
+        renderDashboards();
+        generalLoginForm.classList.remove('visible');
+        generalLoginForm.style.height = '0';
     });
 
     // Guest Login
     guestLoginBtn.addEventListener('click', () => {
         isLoggedIn = true;
-        localStorage.setItem('isLoggedInDashLink', 'true'); // Persist login state
+        localStorage.setItem('isLoggedInDashLink', 'true');
         loginScreen.classList.remove('active');
         mainDashboardScreen.classList.add('active');
         showToast('게스트로 로그인되었습니다.');
         renderDashboards();
-        generalLoginForm.classList.remove('visible'); // Hide form
+        generalLoginForm.classList.remove('visible');
         generalLoginForm.style.height = '0';
     });
 
     // Logout
     logoutBtn.addEventListener('click', () => {
         isLoggedIn = false;
-        localStorage.removeItem('isLoggedInDashLink'); // Clear login state
+        localStorage.removeItem('isLoggedInDashLink');
         mainDashboardScreen.classList.remove('active');
         loginScreen.classList.add('active');
         showToast('로그아웃 되었습니다.');
-        // Optionally clear data on logout for prototype simplicity
         dashboards = [];
         saveData();
     });
 
-    // Add Dashboard Button (Global Header)
+    // Toggle Search Bar
+    searchBtn.addEventListener('click', () => {
+        const isVisible = searchBarContainer.classList.toggle('visible');
+        searchBtn.setAttribute('aria-expanded', isVisible);
+        if (isVisible) {
+            searchInput.focus();
+        } else {
+            searchInput.value = '';
+            renderDashboards();
+        }
+    });
+    searchCloseBtn.addEventListener('click', () => {
+        searchBarContainer.classList.remove('visible');
+        searchBtn.setAttribute('aria-expanded', 'false');
+        searchInput.value = '';
+        renderDashboards();
+        searchBtn.focus(); // Return focus to search button
+    });
+    searchInput.addEventListener('input', () => {
+        clearTimeout(window.searchTimeout);
+        window.searchTimeout = setTimeout(() => {
+            renderDashboards(searchInput.value);
+        }, 300);
+    });
+
+    // Add Dashboard Button (Header icon button and Empty State)
     addDashboardGlobalBtn.addEventListener('click', () => openDashboardModal('add'));
     emptyAddDashboardBtn.addEventListener('click', () => openDashboardModal('add'));
 
     // Dashboard Form Submission (Add/Edit)
     dashboardForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = dashboardNameInput.value.trim();
-        const description = dashboardDescriptionInput.value.trim();
-
-        if (!name) {
-            showToast('대시보드 이름을 입력해주세요.', 'error');
+        if (!validateForm(dashboardForm)) {
+            showToast('대시보드 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
 
+        const name = dashboardNameInput.value.trim();
+        const description = dashboardDescriptionInput.value.trim();
+
         if (editingDashboardId) {
-            // Edit existing dashboard
             dashboards = dashboards.map(d =>
                 d.id === editingDashboardId
                     ? { ...d, name, description }
@@ -370,7 +631,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             showToast('대시보드가 수정되었습니다.');
         } else {
-            // Add new dashboard
             const newDashboard = {
                 id: generateUniqueId(),
                 name: name,
@@ -378,7 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 links: []
             };
             dashboards.push(newDashboard);
-            // Move to the newly added dashboard
             currentDashboardIndex = dashboards.length - 1;
             showToast('새 대시보드가 추가되었습니다.');
         }
@@ -387,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeDashboardModal();
     });
 
-    // Dashboard Modal Cancel
+    // Dashboard Modal Cancel & Close on outside click
     dashboardModalCancelBtn.addEventListener('click', closeDashboardModal);
     dashboardModal.addEventListener('click', (e) => {
         if (e.target === dashboardModal) {
@@ -398,21 +657,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Link Form Submission (Add/Edit)
     linkForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (!validateForm(linkForm)) {
+            showToast('링크 정보를 올바르게 입력해주세요.', 'error');
+            return;
+        }
+
         const url = linkUrlInput.value.trim();
         const title = linkTitleInput.value.trim();
         const favicon = linkFaviconInput.value.trim();
-
-        if (!url) {
-            showToast('URL을 입력해주세요.', 'error');
-            return;
-        }
-
-        try {
-            new URL(url);
-        } catch (error) {
-            showToast('유효하지 않은 URL 형식입니다.', 'error');
-            return;
-        }
 
         const currentDashboard = dashboards[currentDashboardIndex];
         if (!currentDashboard) {
@@ -421,7 +673,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (editingLinkId) {
-            // Edit existing link in the current dashboard
             currentDashboard.links = currentDashboard.links.map(link =>
                 link.id === editingLinkId
                     ? { ...link, url, title: title || new URL(url).hostname, icon: favicon }
@@ -429,7 +680,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             showToast('링크가 수정되었습니다.');
         } else {
-            // Add new link to the current dashboard
             const newLink = {
                 id: generateUniqueId(),
                 url: url,
@@ -440,15 +690,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('새 링크가 추가되었습니다.');
         }
         saveData();
-        // Re-render only the links for the current dashboard
-        const currentDashboardCard = dashboardsContainer.querySelector(`[data-dashboard-id="${currentDashboard.id}"]`);
-        if (currentDashboardCard) {
-            renderLinksForDashboard(currentDashboard.id, currentDashboardCard.querySelector('.links-list').id);
-        }
+        renderLinksForDashboard(currentDashboard.id, `links-list-${currentDashboard.id}`, searchInput.value);
         closeLinkModal();
     });
 
-    // Link Modal Cancel
+    // Link Modal Cancel & Close on outside click
     linkModalCancelBtn.addEventListener('click', closeLinkModal);
     linkModal.addEventListener('click', (e) => {
         if (e.target === linkModal) {
@@ -456,18 +702,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Optional: Auto-fill title/favicon on URL input blur (client-side limitation)
+    // Simulate URL info extraction with loading state
     linkUrlInput.addEventListener('blur', () => {
         const url = linkUrlInput.value.trim();
-        if (url && !linkTitleInput.value && !linkFaviconInput.value) {
-            try {
-                const parsedUrl = new URL(url);
-                linkTitleInput.value = parsedUrl.hostname;
-                linkFaviconInput.value = `${parsedUrl.origin}/favicon.ico`;
-                showToast('URL 정보를 임시로 채웠습니다. 실제 서비스는 더 정확하게 추출됩니다.', 'info');
-            } catch (e) {
-                // Invalid URL
-            }
+        if (url && !linkUrlInput.classList.contains('invalid') && !linkTitleInput.value && !linkFaviconInput.value) {
+            faviconLoadingSpinner.classList.remove('hidden');
+            setTimeout(() => {
+                try {
+                    const parsedUrl = new URL(url);
+                    linkTitleInput.value = parsedUrl.hostname;
+                    linkFaviconInput.value = `${parsedUrl.origin}/favicon.ico`;
+                    showToast('URL 정보를 임시로 채웠습니다.', 'info');
+                } catch (e) {
+                    // Invalid URL, already handled by validation.
+                } finally {
+                    faviconLoadingSpinner.classList.add('hidden');
+                    setupFormValidation(linkForm, linkModalSaveBtn);
+                }
+            }, 800);
         }
     });
 
@@ -482,87 +734,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Delegated Event Listeners for Dynamic Elements ---
 
-    // Event listener for dashboard card actions (edit/delete dashboard, add link to card)
-    function addEventListenersToDashboardCards() {
-        // Clear existing listeners before re-attaching, to prevent duplicates.
-        // This is a common pattern when dynamically re-rendering components.
-        dashboardsContainer.querySelectorAll('.dashboard-card').forEach(dashboardCard => {
-            const dashboardId = dashboardCard.dataset.dashboardId;
-            const currentDashboard = dashboards.find(d => d.id === dashboardId);
+    dashboardsContainer.addEventListener('click', (e) => {
+        const dashboardCard = e.target.closest('.dashboard-card');
+        if (!dashboardCard) return;
 
-            // Using direct property assignment (onclick) for simplicity to overwrite previous listeners
-            // For more complex scenarios, removeEventListener is preferred.
+        const dashboardId = dashboardCard.dataset.dashboardId;
+        const currentDashboard = dashboards.find(d => d.id === dashboardId);
+        if (!currentDashboard) return;
 
-            // Add Link button specific to this card
-            const addLinkCardBtn = dashboardCard.querySelector('.add-link-card-btn');
-            if (addLinkCardBtn) {
-                addLinkCardBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    currentDashboardIndex = dashboards.findIndex(d => d.id === dashboardId);
-                    scrollToDashboard(currentDashboardIndex);
-                    updatePaginationDots();
-                    openLinkModal('add');
-                };
-            }
-
-            // Edit Dashboard button
-            const editDashboardButton = dashboardCard.querySelector('.edit-dashboard-btn');
-            if (editDashboardButton) {
-                editDashboardButton.onclick = (e) => {
-                    e.stopPropagation();
-                    openDashboardModal('edit', currentDashboard);
-                };
-            }
-
-            // Delete Dashboard button
-            const deleteDashboardButton = dashboardCard.querySelector('.delete-dashboard-btn');
-            if (deleteDashboardButton) {
-                deleteDashboardButton.onclick = (e) => {
-                    e.stopPropagation();
-                    if (confirm(`'${currentDashboard.name}' 대시보드를 정말 삭제하시겠습니까? (포함된 링크도 모두 삭제됩니다)`)) {
-                        dashboards = dashboards.filter(d => d.id !== dashboardId);
-                        saveData();
-                        if (dashboards.length > 0 && currentDashboardIndex >= dashboards.length) {
-                            currentDashboardIndex = dashboards.length - 1;
-                        } else if (dashboards.length === 0) {
-                            currentDashboardIndex = 0;
-                        }
-                        renderDashboards();
-                        showToast('대시보드가 삭제되었습니다.');
+        if (e.target.closest('.edit-dashboard-btn')) {
+            e.stopPropagation();
+            openDashboardModal('edit', currentDashboard);
+        } else if (e.target.closest('.delete-dashboard-btn')) {
+            e.stopPropagation();
+            if (confirm(`'${currentDashboard.name}' 대시보드를 정말 삭제하시겠습니까? (포함된 링크도 모두 삭제됩니다)`)) {
+                dashboards = dashboards.filter(d => d.id !== dashboardId);
+                saveData();
+                if (dashboards.length > 0) {
+                    if (currentDashboardIndex >= dashboards.length) {
+                        currentDashboardIndex = dashboards.length - 1;
                     }
-                };
+                } else {
+                    currentDashboardIndex = 0;
+                }
+                renderDashboards();
+                showToast('대시보드가 삭제되었습니다.');
             }
+        } else if (e.target.closest('.add-link-card-btn')) {
+            e.stopPropagation();
+            currentDashboardIndex = dashboards.findIndex(d => d.id === dashboardId);
+            scrollToDashboard(currentDashboardIndex);
+            updatePaginationDots();
+            openLinkModal('add');
+        }
+    });
 
-            // Delegated event listener for link item actions (edit/delete/direct open)
-            const linksList = dashboardCard.querySelector('.links-list');
-            if (linksList) {
-                linksList.onclick = (e) => {
-                    const linkItem = e.target.closest('.link-item');
-                    if (!linkItem) return;
+    dashboardsContainer.addEventListener('click', (e) => {
+        const linkItem = e.target.closest('.link-item');
+        if (!linkItem) return;
 
-                    const linkId = linkItem.dataset.linkId;
-                    const targetLink = currentDashboard?.links.find(link => link.id === linkId);
-                    if (!targetLink) return;
+        const linkId = linkItem.dataset.linkId;
+        const dashboardId = linkItem.closest('.dashboard-card').dataset.dashboardId;
+        const targetDashboard = dashboards.find(d => d.id === dashboardId);
+        const targetLink = targetDashboard?.links.find(link => link.id === linkId);
+        if (!targetLink) return;
 
-                    if (e.target.closest('.edit-link-btn')) {
-                        e.stopPropagation();
-                        openLinkModal('edit', targetLink);
-                    } else if (e.target.closest('.delete-link-btn')) {
-                        e.stopPropagation();
-                        if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
-                            currentDashboard.links = currentDashboard.links.filter(link => link.id !== linkId);
-                            saveData();
-                            renderLinksForDashboard(dashboardId, linksList.id);
-                            showToast('링크가 삭제되었습니다.');
-                        }
-                    } else {
-                        // Direct click on link item (not action buttons)
-                        window.open(targetLink.url, '_blank');
-                    }
-                };
+        if (e.target.closest('.edit-link-btn')) {
+            e.stopPropagation();
+            openLinkModal('edit', targetLink);
+        } else if (e.target.closest('.delete-link-btn')) {
+            e.stopPropagation();
+            if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
+                targetDashboard.links = targetDashboard.links.filter(link => link.id !== linkId);
+                saveData();
+                renderLinksForDashboard(dashboardId, linkItem.closest('.links-list').id, searchInput.value);
+                showToast('링크가 삭제되었습니다.');
             }
-        });
-    }
+        } else {
+            // Direct click on link item (not action buttons)
+            window.open(targetLink.url, '_blank');
+        }
+    });
+
 
     // Pagination dot click (mobile)
     dashboardPagination.addEventListener('click', (e) => {
@@ -571,7 +804,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (index !== currentDashboardIndex) {
                 currentDashboardIndex = index;
                 scrollToDashboard(currentDashboardIndex);
-                // updateMainTitle(); // Not needed as title is fixed
                 updatePaginationDots();
             }
         }
@@ -590,7 +822,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let closestIndex = 0;
             let minDiff = Infinity;
             
-            // For scroll-snap-align: start, the closest card is the one whose left edge is nearest to scrollLeft
             cardElements.forEach((card, index) => {
                 const diff = Math.abs(card.offsetLeft - scrollLeft);
                 if (diff < minDiff) {
@@ -601,12 +832,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (closestIndex !== currentDashboardIndex) {
                 currentDashboardIndex = closestIndex;
-                // updateMainTitle(); // Not needed as title is fixed
                 updatePaginationDots();
             }
-        }, 100); // Debounce scroll event
+        }, 100);
     });
-
 
     // Ensure scroll position is correct on resize
     let resizeTimeout;
@@ -614,18 +843,239 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             if (isLoggedIn && dashboards.length > 0) {
-                 scrollToDashboard(currentDashboardIndex, false); // No smooth scroll on resize
+                 scrollToDashboard(currentDashboardIndex, false);
             }
         }, 200);
     });
 
+    // --- Settings Modal ---
+    settingsBtn.addEventListener('click', () => {
+        openModal(settingsModal);
+        settingsBtn.setAttribute('aria-expanded', 'true');
+    });
+    settingsModalCloseBtn.addEventListener('click', () => {
+        closeModal(settingsModal);
+        settingsBtn.setAttribute('aria-expanded', 'false');
+        settingsBtn.focus(); // Return focus to the settings button
+    });
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            closeModal(settingsModal);
+            settingsBtn.setAttribute('aria-expanded', 'false');
+            settingsBtn.focus();
+        }
+    });
+
+    themeToggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            applyTheme(toggle.dataset.theme);
+        });
+    });
+
+    colorSwatches.forEach(swatch => {
+        swatch.addEventListener('click', () => {
+            applyPrimaryColor(swatch.dataset.color);
+        });
+        // Allow keyboard navigation for color swatches
+        swatch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                applyPrimaryColor(swatch.dataset.color);
+            }
+        });
+    });
+
+    // --- SortableJS Initialization ---
+    let dashboardsSortable;
+    let linksSortables = {};
+
+    const initializeSortable = () => {
+        if (dashboardsSortable) {
+            dashboardsSortable.destroy();
+        }
+        for (const key in linksSortables) {
+            if (linksSortables[key]) {
+                linksSortables[key].destroy();
+            }
+        }
+        linksSortables = {};
+
+        // Sortable for Dashboards (horizontal)
+        dashboardsSortable = Sortable.create(dashboardsContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            fallbackClass: 'sortable-fallback',
+            handle: '.dashboard-card-header',
+            forceFallback: true,
+            onEnd: function (evt) {
+                const oldIndex = evt.oldIndex;
+                const newIndex = evt.newIndex;
+
+                if (oldIndex !== newIndex) {
+                    const [movedDashboard] = dashboards.splice(oldIndex, 1);
+                    dashboards.splice(newIndex, 0, movedDashboard);
+                    saveData();
+                    currentDashboardIndex = newIndex;
+                    updatePaginationDots();
+                    showToast('대시보드 순서가 변경되었습니다.');
+                    // Re-render to ensure all Sortable instances are correctly re-initialized
+                    // This is a bit heavy, but ensures consistency after complex drag/drop, especially with groups
+                    renderDashboards(searchInput.value);
+                }
+            }
+        });
+
+        // Sortable for Links within each Dashboard (vertical)
+        dashboards.forEach(dashboard => {
+            const linksListElement = document.getElementById(`links-list-${dashboard.id}`);
+            if (linksListElement) {
+                linksSortables[dashboard.id] = Sortable.create(linksListElement, {
+                    animation: 150,
+                    group: 'links',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    fallbackClass: 'sortable-fallback',
+                    handle: '.link-item',
+                    forceFallback: true,
+                    onEnd: function (evt) {
+                        const oldIndex = evt.oldOldIndex;
+                        const newIndex = evt.newIndex;
+                        const fromDashboardId = evt.from.dataset.dashboardId;
+                        const toDashboardId = evt.to.dataset.dashboardId;
+
+                        const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
+                        const toDashboard = dashboards.find(d => d.id === toDashboardId);
+
+                        if (!fromDashboard || !toDashboard) {
+                            console.error('Source or target dashboard not found.');
+                            return;
+                        }
+
+                        const [movedLink] = fromDashboard.links.splice(oldIndex, 1);
+
+                        if (fromDashboardId === toDashboardId) {
+                            toDashboard.links.splice(newIndex, 0, movedLink);
+                            showToast('링크 순서가 변경되었습니다.');
+                        } else {
+                            toDashboard.links.splice(newIndex, 0, movedLink);
+                            showToast('링크가 다른 대시보드로 이동했습니다.');
+                        }
+                        saveData();
+                        renderLinksForDashboard(fromDashboardId, `links-list-${fromDashboardId}`, searchInput.value);
+                        if (fromDashboardId !== toDashboardId) {
+                            renderLinksForDashboard(toDashboardId, `links-list-${toDashboardId}`, searchInput.value);
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    // --- Onboarding Tutorial Logic ---
+    const showTutorialStep = (stepIndex) => {
+        if (stepIndex < 0 || stepIndex >= tutorialSteps.length) {
+            closeModal(tutorialModal);
+            localStorage.setItem('hasSeenDashLinkTutorial', 'true');
+            hasSeenTutorial = true;
+            return;
+        }
+
+        const step = tutorialSteps[stepIndex];
+        tutorialContent.innerHTML = `
+            <h3>${step.title}</h3>
+            <p>${step.content}</p>
+            ${step.image ? `<img src="${step.image}" alt="${step.title}" class="tutorial-img">` : ''}
+        `;
+
+        tutorialPrevBtn.classList.toggle('hidden', stepIndex === 0);
+        tutorialNextBtn.classList.toggle('hidden', stepIndex === tutorialSteps.length - 1);
+        tutorialStartBtn.classList.toggle('hidden', stepIndex !== tutorialSteps.length - 1);
+        tutorialSkipBtn.classList.toggle('hidden', stepIndex === tutorialSteps.length - 1);
+
+        currentTutorialStep = stepIndex;
+        openModal(tutorialModal);
+    };
+
+    tutorialPrevBtn.addEventListener('click', () => showTutorialStep(currentTutorialStep - 1));
+    tutorialNextBtn.addEventListener('click', () => showTutorialStep(currentTutorialStep + 1));
+    tutorialStartBtn.addEventListener('click', () => showTutorialStep(tutorialSteps.length)); // Complete tutorial
+    tutorialSkipBtn.addEventListener('click', () => showTutorialStep(tutorialSteps.length)); // Complete tutorial
+
+    // --- Global Keyboard Shortcuts ---
+    document.addEventListener('keydown', (e) => {
+        // Close modals/search with Escape key
+        if (e.key === 'Escape') {
+            if (linkModal.classList.contains('active')) {
+                closeLinkModal();
+            } else if (dashboardModal.classList.contains('active')) {
+                closeDashboardModal();
+            } else if (settingsModal.classList.contains('active')) {
+                closeModal(settingsModal);
+                settingsBtn.setAttribute('aria-expanded', 'false');
+            } else if (searchBarContainer.classList.contains('visible')) {
+                searchCloseBtn.click(); // Simulate click on close button
+            } else if (tutorialModal.classList.contains('active')) {
+                // Allow escape to skip tutorial
+                showTutorialStep(tutorialSteps.length);
+            }
+        }
+        // Cmd/Ctrl + L for Add Link
+        if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+            e.preventDefault();
+            if (isLoggedIn && !linkModal.classList.contains('active')) {
+                addLinkGlobalBtn.click(); // Trigger click on the global button
+            }
+        }
+        // Cmd/Ctrl + D for Add Dashboard
+        if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+            e.preventDefault();
+            if (isLoggedIn && !dashboardModal.classList.contains('active')) {
+                addDashboardGlobalBtn.click(); // Trigger click on the global button
+            }
+        }
+        // Cmd/Ctrl + F for Search
+        if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+            e.preventDefault();
+            if (isLoggedIn) {
+                searchBtn.click(); // Toggle search bar
+            }
+        }
+        // Arrow key navigation for dashboards on desktop/tablet (when not in modal)
+        if (isLoggedIn && !linkModal.classList.contains('active') && !dashboardModal.classList.contains('active') && !settingsModal.classList.contains('active') && !tutorialModal.classList.contains('active')) {
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (currentDashboardIndex < dashboards.length - 1) {
+                    currentDashboardIndex++;
+                    scrollToDashboard(currentDashboardIndex);
+                    updatePaginationDots();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentDashboardIndex > 0) {
+                    currentDashboardIndex--;
+                    scrollToDashboard(currentDashboardIndex);
+                    updatePaginationDots();
+                }
+            }
+        }
+    });
+
+
     // --- Initial Load ---
     loadData();
+    applyTheme(currentTheme);
+    applyPrimaryColor(currentPrimaryColor);
+
     if (localStorage.getItem('isLoggedInDashLink') === 'true') {
         isLoggedIn = true;
         loginScreen.classList.remove('active');
         mainDashboardScreen.classList.add('active');
         renderDashboards();
+        // Show tutorial for first-time logged-in users
+        if (!hasSeenTutorial) {
+            showTutorialStep(0);
+        }
     } else {
         loginScreen.classList.add('active');
     }
