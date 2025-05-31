@@ -20,9 +20,10 @@
                 </h1>
                 <p class="tagline">나만의 웹 링크를 어디서든, 한 눈에</p>
                 <div class="social-login-buttons">
+                    <!-- 버튼 텍스트 변경: "이메일로 로그인/가입" -->
                     <button id="general-login-btn" class="btn btn-social btn-general" aria-expanded="false" aria-controls="general-login-form">
                         <span class="material-icons">account_circle</span>
-                        이메일로 시작하기 (로그인/가입)
+                        이메일로 로그인/가입
                     </button>
                     <div id="general-login-form" class="hidden">
                         <div class="form-group">
@@ -33,9 +34,13 @@
                         <div class="form-group">
                             <label for="login-password">비밀번호</label>
                             <input type="password" id="login-password" placeholder="비밀번호" required>
-                            <p class="error-message hidden" aria-live="polite">비밀번호를 입력해주세요.</p>
+                            <p class="error-message hidden" aria-live="polite">비밀번호는 6자 이상이어야 합니다.</p>
                         </div>
-                        <button id="login-submit-btn" class="btn btn-primary" disabled>로그인</button>
+                        <!-- 로그인 및 회원가입 버튼 추가 -->
+                        <div class="modal-actions" style="justify-content: center;">
+                            <button type="button" id="login-submit-btn" class="btn btn-text" disabled>로그인</button>
+                            <button type="button" id="signup-submit-btn" class="btn btn-primary" disabled>회원가입</button>
+                        </div>
                     </div>
                     <!-- Google 로그인 버튼 활성화 -->
                     <button class="btn btn-social btn-google" id="google-login-btn">
@@ -43,8 +48,7 @@
                         Google로 시작하기
                     </button>
                 </div>
-                <!-- 게스트 로그인 버튼 제거 -->
-                <!-- <button id="guest-login-btn" class="btn btn-primary btn-guest">게스트로 시작하기 (프로토타입)</button> -->
+                <!-- 게스트 로그인 버튼 제거됨 -->
             </div>
         </div>
 
