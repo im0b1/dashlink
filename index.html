@@ -37,12 +37,14 @@
                         </div>
                         <button id="login-submit-btn" class="btn btn-primary" disabled>로그인</button>
                     </div>
-                    <button class="btn btn-social btn-google">
+                    <!-- Google 로그인 버튼은 현재 프로토타입에서 기능하지 않으므로 제거하거나 비활성화하는 것을 고려해볼 수 있습니다. -->
+                    <!-- <button class="btn btn-social btn-google">
                         <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
                         Google로 시작하기
-                    </button>
+                    </button> -->
                 </div>
-                <button id="guest-login-btn" class="btn btn-primary btn-guest">게스트로 시작하기 (프로토타입)</button>
+                <!-- 게스트 로그인 버튼은 Firebase 통합 시 필요하지 않으므로 제거합니다. -->
+                <!-- <button id="guest-login-btn" class="btn btn-primary btn-guest">게스트로 시작하기 (프로토타입)</button> -->
             </div>
         </div>
 
@@ -81,7 +83,7 @@
                 <!-- Dashboards (cards) will be rendered here by JS -->
                 <div class="empty-state" id="empty-dashboards-state">
                     <span class="material-icons">dashboard</span>
-                    <p>아직 대시보드가 없어요.<br>지금 바로 첫 대시보드를 추가해보세요!</p>
+                    <p>아직 대시보드가 없어요.<br>로그인하여 첫 대시보드를 추가해보세요!</p>
                     <button class="btn btn-primary" id="empty-add-dashboard-btn">새 대시보드 추가</button>
                 </div>
             </div>
@@ -185,7 +187,11 @@
         <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
     </div>
 
-    <!-- JavaScript 파일 연결 -->
+    <!-- Firebase SDK Scripts (Google CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <!-- SortableJS 라이브러리 (드래그 앤 드롭 기능을 위해 필요) -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <!-- 주 애플리케이션 스크립트 -->
