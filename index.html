@@ -22,7 +22,7 @@
                 <div class="social-login-buttons">
                     <button id="general-login-btn" class="btn btn-social btn-general" aria-expanded="false" aria-controls="general-login-form">
                         <span class="material-icons">account_circle</span>
-                        일반 로그인
+                        이메일로 시작하기 (로그인/가입)
                     </button>
                     <div id="general-login-form" class="hidden">
                         <div class="form-group">
@@ -37,13 +37,13 @@
                         </div>
                         <button id="login-submit-btn" class="btn btn-primary" disabled>로그인</button>
                     </div>
-                    <!-- Google 로그인 버튼은 현재 프로토타입에서 기능하지 않으므로 제거하거나 비활성화하는 것을 고려해볼 수 있습니다. -->
-                    <!-- <button class="btn btn-social btn-google">
+                    <!-- Google 로그인 버튼 활성화 -->
+                    <button class="btn btn-social btn-google" id="google-login-btn">
                         <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
                         Google로 시작하기
-                    </button> -->
+                    </button>
                 </div>
-                <!-- 게스트 로그인 버튼은 Firebase 통합 시 필요하지 않으므로 제거합니다. -->
+                <!-- 게스트 로그인 버튼 제거 -->
                 <!-- <button id="guest-login-btn" class="btn btn-primary btn-guest">게스트로 시작하기 (프로토타입)</button> -->
             </div>
         </div>
@@ -83,7 +83,7 @@
                 <!-- Dashboards (cards) will be rendered here by JS -->
                 <div class="empty-state" id="empty-dashboards-state">
                     <span class="material-icons">dashboard</span>
-                    <p>아직 대시보드가 없어요.<br>로그인하여 첫 대시보드를 추가해보세요!</p>
+                    <p>로그인 후 첫 대시보드를 추가해보세요!<br>이메일 인증이 필요할 수 있습니다.</p>
                     <button class="btn btn-primary" id="empty-add-dashboard-btn">새 대시보드 추가</button>
                 </div>
             </div>
