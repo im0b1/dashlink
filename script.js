@@ -12,8 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginEmailInput = document.getElementById('login-email');
     const loginPasswordInput = document.getElementById('login-password');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
-    const signupSubmitBtn = document.getElementById('signup-submit-btn'); // 새로운 회원가입 버튼 DOM
-    const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 DOM
+    const signupSubmitBtn = document.getElementById('signup-submit-btn');
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn'); // 비밀번호 재설정 버튼 추가
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -75,8 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPrimaryColor = localStorage.getItem('dashLinkPrimaryColor') || '#00C49F';
     let hasSeenTutorial = localStorage.getItem('hasSeenDashLinkTutorial') === 'true';
     let currentTutorialStep = 0;
-    let currentUserUid = null; // 현재 로그인된 사용자의 UID
-    let isEmailVerified = false; // 이메일 인증 상태 추가
+    let currentUserUid = null;
+    let isEmailVerified = false;
 
     const tutorialSteps = [
         {
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             title: '대시보드 스와이프',
             content: '각 카드는 하나의 "대시보드"입니다. 모바일에서는 좌우로 스와이프하여 다른 대시보드로 이동할 수 있습니다.',
-            image: 'https://via.placeholder.com/400x200?text=Dashboard+Swipe' // Placeholder image
+            image: 'https://via.placeholder.com/400x200?text=Dashboard+Swipe'
         },
         {
             title: '링크 추가 및 관리',
@@ -119,10 +120,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const appFirebase = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const googleProvider = new firebase.auth.GoogleAuthProvider(); // GoogleAuthProvider 추가
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
     // --- Utility Functions ---
     const generateUniqueId = () => '_' + Math.random().toString(36).substr(2, 9);
+
+    /**
+     * 비동기 작업 시 버튼의 로딩 상태를 관리합니다.
+     * @param {HTMLButtonElement} buttonElement - 로딩 상태를 변경할 버튼 요소.
+     * @param {boolean} isLoading - 로딩 중인지 여부 (true: 로딩 시작, false: 로딩 종료).
+     * @param {string} loadingText - 로딩 중일 때 표시할 텍스트 (기본값: "처리 중...").
+     * @param {string} originalText - 버튼의 원래 텍스트 (로딩 종료 시 복원).
+     */
+    const setLoadingState = (buttonElement, isLoading, loadingText = "처리 중...", originalText = null) => {
+        if (!buttonElement) return;
+
+        if (isLoading) {
+            buttonElement.dataset.originalText = originalText || buttonElement.textContent; // 원래 텍스트 저장
+            buttonElement.textContent = loadingText;
+            buttonElement.disabled = true;
+            // 스피너를 추가하려면 여기에 코드를 추가할 수 있습니다.
+            // 예: buttonElement.innerHTML = `<span class="loading-spinner-small"></span> ${loadingText}`;
+        } else {
+            buttonElement.textContent = buttonElement.dataset.originalText || originalText || "저장"; // 저장된 텍스트 또는 기본값 복원
+            buttonElement.disabled = false;
+            // 스피너를 제거하려면 여기에 코드를 추가할 수 있습니다.
+        }
+    };
+
 
     const saveData = async () => {
         if (!currentUserUid) {
@@ -132,9 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const userDashboardsRef = db.collection('users').doc(currentUserUid).collection('dashboards');
             
-            // 기존 데이터 삭제 (간단한 구현을 위해, 실제로는 더 효율적인 방법 고려)
-            // 대시보드 순서 변경 및 링크 이동 시 배열을 통째로 덮어쓰므로 기존 문서를 삭제하는 것은 비효율적일 수 있습니다.
-            // 하지만 이 프로토타입에서는 데이터 동기화 문제를 피하기 위해 전체를 덮어쓰는 방식을 사용합니다.
             const existingDocs = await userDashboardsRef.get();
             const batch = db.batch();
             existingDocs.forEach(doc => {
@@ -158,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const loadData = async () => {
-        // 이메일 미인증 상태이거나 로그인하지 않았다면 데이터 로드 제한
         if (!currentUserUid || !isEmailVerified) {
             dashboards = [];
             renderDashboards();
@@ -170,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await userDashboardsRef.get();
             
             if (snapshot.empty) {
-                // 데이터가 없는 경우 초기 더미 데이터 로드 (첫 로그인 사용자용)
                 dashboards = [
                     {
                         id: generateUniqueId(),
@@ -183,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ]
                     }
                 ];
-                await saveData(); // 초기 데이터 Firestore에 저장
+                await saveData();
                 console.log("Initial dummy data loaded and saved to Firestore.");
             } else {
                 dashboards = snapshot.docs.map(doc => ({
@@ -215,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardsContainer.innerHTML = '';
         dashboardPagination.innerHTML = '';
 
-        // 이메일 미인증 상태이거나 로그인하지 않았다면 빈 상태만 보여줌 (데이터 로드 제한과 연결)
         if (!currentUserUid || !isEmailVerified) {
              emptyDashboardsState.style.display = 'flex';
              dashboardPagination.style.display = 'none';
@@ -274,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         scrollToDashboard(currentDashboardIndex, false);
         updatePaginationDots();
-        initializeSortable(); // SortableJS 초기화 (인증 상태에 따라 내부적으로 조건부 처리)
+        initializeSortable();
     };
 
     const renderLinksForDashboard = (dashboardId, containerId, filterText = '') => {
@@ -394,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Modal Functions (기존과 동일) ---
-    let lastFocusedElement = null; // To restore focus after modal closes
+    let lastFocusedElement = null;
 
     const trapFocus = (modalElement) => {
         const focusableElements = modalElement.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -407,23 +426,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const isTabPressed = (e.key === 'Tab');
             if (!isTabPressed) return;
 
-            if (e.shiftKey) { // if shift key pressed for shift + tab
+            if (e.shiftKey) {
                 if (document.activeElement === firstFocusableEl) {
-                    lastFocusableEl.focus(); // add focus to the last focusable element
+                    lastFocusableEl.focus();
                     e.preventDefault();
                 }
-            } else { // if tab key is pressed
+            } else {
                 if (document.activeElement === lastFocusableEl) {
-                    firstFocusableEl.focus(); // add focus to the first focusable element
+                    firstFocusableEl.focus();
                     e.preventDefault();
                 }
             }
         });
-        firstFocusableEl.focus(); // Set initial focus
+        firstFocusableEl.focus();
     };
 
     const openModal = (modalElement) => {
-        lastFocusedElement = document.activeElement; // Save focus
+        lastFocusedElement = document.activeElement;
         modalElement.classList.add('active');
         trapFocus(modalElement);
     };
@@ -431,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModal = (modalElement) => {
         modalElement.classList.remove('active');
         if (lastFocusedElement) {
-            lastFocusedElement.focus(); // Restore focus
+            lastFocusedElement.focus();
             lastFocusedElement = null;
         }
     };
@@ -458,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             linkFaviconInput.value = link.icon || '';
         }
         openModal(linkModal);
-        setupFormValidation(linkForm, [linkModalSaveBtn]); // 배열로 전달
+        setupFormValidation(linkForm, [linkModalSaveBtn]);
     };
 
     const closeLinkModal = () => {
@@ -491,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardDescriptionInput.value = dashboard.description || '';
         }
         openModal(dashboardModal);
-        setupFormValidation(dashboardForm, [dashboardModalSaveBtn]); // 배열로 전달
+        setupFormValidation(dashboardForm, [dashboardModalSaveBtn]);
     };
 
     const closeDashboardModal = () => {
@@ -522,9 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Firebase 에러 메시지를 사용자 친화적으로 변환
     const getFirebaseErrorMessage = (error) => {
-        console.log("Firebase error code:", error.code); // 디버깅을 위해 에러 코드 로깅
+        console.log("Firebase error code:", error.code);
         switch (error.code) {
-            case 'auth/invalid-login-credentials': // 추가된 에러 코드
+            case 'auth/invalid-login-credentials':
                 return '이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해주세요.';
             case 'auth/email-already-in-use':
                 return '이미 사용 중인 이메일 주소입니다.';
@@ -536,9 +555,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '비밀번호는 6자 이상이어야 합니다.';
             case 'auth/user-disabled':
                 return '비활성화된 사용자 계정입니다.';
-            case 'auth/user-not-found': // 이 메시지는 loginSubmitBtn에서 발생하지 않음 (invalid-login-credentials로 통합됨)
-            case 'auth/wrong-password': // 이 메시지도 loginSubmitBtn에서 발생하지 않음 (invalid-login-credentials로 통합됨)
-                return '이메일 또는 비밀번호가 일치하지 않습니다.'; // 예비 메시지
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+                return '이메일 또는 비밀번호가 일치하지 않습니다.';
             case 'auth/too-many-requests':
                 return '로그인/가입 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.';
             case 'auth/popup-closed-by-user':
@@ -551,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Form Validation Functions ---
+    // --- Form Validation Functions (기존과 동일) ---
     const validateForm = (formElement) => {
         let isValid = true;
         const inputs = formElement.querySelectorAll('input[required], textarea[required]');
@@ -598,14 +617,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return isValid;
     };
 
-    // saveButtons를 배열로 받도록 수정
     const setupFormValidation = (formElement, saveButtons) => {
         const inputs = formElement.querySelectorAll('input[required], textarea[required]');
 
         const checkFormValidity = () => {
             const isValid = validateForm(formElement);
             saveButtons.forEach(button => {
-                button.disabled = !isValid;
+                // 로딩 상태가 아닌 경우에만 disabled를 변경
+                if (!button.disabled || button.dataset.isloading === 'true') { // 'true' 문자열로 비교
+                     button.disabled = !isValid;
+                }
             });
         };
 
@@ -614,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('blur', checkFormValidity);
         });
 
-        checkFormValidity(); // Initial check
+        checkFormValidity();
     };
 
     // --- Event Handlers ---
@@ -628,13 +649,13 @@ document.addEventListener('DOMContentLoaded', () => {
             generalLoginBtn.setAttribute('aria-expanded', 'true');
             loginEmailInput.focus();
 
-            requestAnimationFrame(() => { // 1차 렌더링 후
-                requestAnimationFrame(() => { // 2차 렌더링 (reflow) 후
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
                     const fullHeight = generalLoginForm.scrollHeight;
-                    generalLoginForm.style.height = `${fullHeight}px`; // 실제 높이로 애니메이션 시작
+                    generalLoginForm.style.height = `${fullHeight}px`;
                     generalLoginForm.addEventListener('transitionend', function handler() {
                         if (generalLoginForm.classList.contains('visible')) {
-                            generalLoginForm.style.height = 'auto'; // 애니메이션 완료 후 auto로 설정
+                            generalLoginForm.style.height = 'auto';
                         }
                         generalLoginForm.removeEventListener('transitionend', handler);
                     }, { once: true });
@@ -642,20 +663,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
         } else {
-            generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`; // 현재 높이 캡처
+            generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
             generalLoginBtn.setAttribute('aria-expanded', 'false');
             
-            requestAnimationFrame(() => { // 1차 렌더링 후
-                requestAnimationFrame(() => { // 2차 렌더링 (reflow) 후
-                    generalLoginForm.style.height = '0'; // 0으로 애니메이션 시작
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    generalLoginForm.style.height = '0';
                     generalLoginForm.addEventListener('transitionend', function handler() {
-                        generalLoginForm.classList.remove('visible'); // 애니메이션 완료 후 클래스 제거
+                        generalLoginForm.classList.remove('visible');
                         generalLoginForm.removeEventListener('transitionend', handler);
                     }, { once: true });
                 });
             });
         }
-        // 로그인/회원가입 버튼 모두에 유효성 검사 적용
         setupFormValidation(generalLoginForm, [loginSubmitBtn, signupSubmitBtn]);
     });
 
@@ -670,6 +690,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = loginEmailInput.value.trim();
         const password = loginPasswordInput.value.trim();
 
+        setLoadingState(loginSubmitBtn, true, "로그인 중...");
+        setLoadingState(signupSubmitBtn, true); // 다른 버튼도 잠시 비활성화
+        setLoadingState(googleLoginBtn, true);
+
         try {
             await auth.signInWithEmailAndPassword(email, password);
             showToast('로그인 성공!');
@@ -677,7 +701,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Login error:", error);
         } finally {
-            // 로그인 시도 후 폼 닫기 (성공/실패와 관계없이 닫음)
+            setLoadingState(loginSubmitBtn, false, "로그인");
+            setLoadingState(signupSubmitBtn, false);
+            setLoadingState(googleLoginBtn, false);
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
                 void generalLoginForm.offsetWidth;
@@ -700,16 +726,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = loginEmailInput.value.trim();
         const password = loginPasswordInput.value.trim();
 
+        setLoadingState(signupSubmitBtn, true, "가입 중...");
+        setLoadingState(loginSubmitBtn, true); // 다른 버튼도 잠시 비활성화
+        setLoadingState(googleLoginBtn, true);
+
         try {
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            await userCredential.user.sendEmailVerification(); // 이메일 인증 메일 전송
+            await userCredential.user.sendEmailVerification();
             showToast('회원가입 성공! 이메일 인증 메일을 보냈습니다. 메일함을 확인해주세요.', 'info');
-            // 회원가입 후 자동으로 로그인되어 onAuthStateChanged가 처리하도록 함
         } catch (error) {
             showToast('회원가입 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Signup error:", error);
         } finally {
-             // 가입 시도 후 폼 닫기 (성공/실패와 관계없이 닫음)
+            setLoadingState(signupSubmitBtn, false, "회원가입");
+            setLoadingState(loginSubmitBtn, false);
+            setLoadingState(googleLoginBtn, false);
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
                 void generalLoginForm.offsetWidth;
@@ -724,27 +755,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Google 로그인
     googleLoginBtn.addEventListener('click', async () => {
+        setLoadingState(googleLoginBtn, true, "Google 로그인 중...");
+        setLoadingState(loginSubmitBtn, true);
+        setLoadingState(signupSubmitBtn, true);
+
         try {
             await auth.signInWithPopup(googleProvider);
             showToast('Google 로그인 성공!');
         } catch (error) {
             showToast('Google 로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Google login error:", error);
+        } finally {
+            setLoadingState(googleLoginBtn, false, "Google로 시작하기");
+            setLoadingState(loginSubmitBtn, false);
+            setLoadingState(signupSubmitBtn, false);
+        }
+    });
+
+    // 비밀번호 재설정 기능
+    forgotPasswordBtn.addEventListener('click', async () => {
+        const email = loginEmailInput.value.trim();
+        if (!email) {
+            showToast('비밀번호 재설정 이메일을 입력해주세요.', 'info');
+            loginEmailInput.focus();
+            return;
+        }
+
+        setLoadingState(forgotPasswordBtn, true, "재설정 중...");
+        setLoadingState(loginSubmitBtn, true);
+        setLoadingState(signupSubmitBtn, true);
+        setLoadingState(googleLoginBtn, true);
+
+        try {
+            await auth.sendPasswordResetEmail(email);
+            showToast(`비밀번호 재설정 이메일이 ${email} (으)로 전송되었습니다.`, 'info');
+        } catch (error) {
+            showToast('비밀번호 재설정 실패: ' + getFirebaseErrorMessage(error), 'error');
+            console.error("Password reset error:", error);
+        } finally {
+            setLoadingState(forgotPasswordBtn, false, "비밀번호 재설정");
+            setLoadingState(loginSubmitBtn, false);
+            setLoadingState(signupSubmitBtn, false);
+            setLoadingState(googleLoginBtn, false);
         }
     });
 
 
-    // Logout (Firebase Auth)
+    // Logout
     logoutBtn.addEventListener('click', async () => {
+        setLoadingState(logoutBtn, true, "로그아웃 중...", "로그아웃");
         try {
             await auth.signOut();
             showToast('로그아웃 되었습니다.');
-            // 로그아웃 시 로컬 데이터 초기화 및 빈 화면 렌더링
             dashboards = [];
             renderDashboards();
         } catch (error) {
             showToast('로그아웃 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Logout error:", error);
+        } finally {
+            setLoadingState(logoutBtn, false, "로그아웃", "로그아웃");
         }
     });
 
@@ -789,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openDashboardModal('add');
     });
 
-    // Dashboard Form Submission (Firestore) (이메일 인증 확인 추가)
+    // Dashboard Form Submission (Firestore) (이메일 인증 확인 및 로딩 상태 추가)
     dashboardForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!validateForm(dashboardForm)) {
@@ -803,6 +872,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const name = dashboardNameInput.value.trim();
         const description = dashboardDescriptionInput.value.trim();
+
+        setLoadingState(dashboardModalSaveBtn, true, "저장 중...");
 
         try {
             if (editingDashboardId) {
@@ -831,6 +902,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showToast('대시보드 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Dashboard save error:", error);
+        } finally {
+            setLoadingState(dashboardModalSaveBtn, false, "저장");
         }
     });
 
@@ -842,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Link Form Submission (Firestore) (이메일 인증 확인 추가)
+    // Link Form Submission (Firestore) (이메일 인증 확인 및 로딩 상태 추가)
     linkForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!validateForm(linkForm)) {
@@ -863,6 +936,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('현재 대시보드를 찾을 수 없습니다. 대시보드를 먼저 추가해주세요.', 'error');
             return;
         }
+
+        setLoadingState(linkModalSaveBtn, true, "저장 중...");
 
         try {
             if (editingLinkId) {
@@ -892,6 +967,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showToast('링크 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Link save error:", error);
+        } finally {
+            setLoadingState(linkModalSaveBtn, false, "저장");
         }
     });
 
@@ -918,7 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Invalid URL, already handled by validation.
                 } finally {
                     faviconLoadingSpinner.classList.add('hidden');
-                    setupFormValidation(linkForm, [linkModalSaveBtn]); // 배열로 전달
+                    setupFormValidation(linkForm, [linkModalSaveBtn]);
                 }
             }, 800);
         }
@@ -952,12 +1029,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (e.target.closest('.edit-dashboard-btn')) {
+        const editDashboardBtn = e.target.closest('.edit-dashboard-btn');
+        const deleteDashboardBtn = e.target.closest('.delete-dashboard-btn');
+
+        if (editDashboardBtn) {
             e.stopPropagation();
             openDashboardModal('edit', currentDashboard);
-        } else if (e.target.closest('.delete-dashboard-btn')) {
+        } else if (deleteDashboardBtn) {
             e.stopPropagation();
             if (confirm(`'${currentDashboard.name}' 대시보드를 정말 삭제하시겠습니까? (포함된 링크도 모두 삭제됩니다)`)) {
+                setLoadingState(deleteDashboardBtn, true, '', `<span class="material-icons">delete</span>`); // 아이콘 버튼 로딩
                 try {
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).delete();
                     showToast('대시보드가 삭제되었습니다.');
@@ -972,6 +1053,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                     showToast('대시보드 삭제 실패: ' + getFirebaseErrorMessage(error), 'error');
                     console.error("Dashboard delete error:", error);
+                } finally {
+                    setLoadingState(deleteDashboardBtn, false, '', `<span class="material-icons">delete</span>`);
                 }
             }
         } else if (e.target.closest('.add-link-card-btn')) {
@@ -998,19 +1081,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (e.target.closest('.edit-link-btn')) {
+        const editLinkBtn = e.target.closest('.edit-link-btn');
+        const deleteLinkBtn = e.target.closest('.delete-link-btn');
+
+        if (editLinkBtn) {
             e.stopPropagation();
             openLinkModal('edit', targetLink);
-        } else if (e.target.closest('.delete-link-btn')) {
+        } else if (deleteLinkBtn) {
             e.stopPropagation();
             if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
+                setLoadingState(deleteLinkBtn, true, '', `<span class="material-icons">delete</span>`);
                 try {
-                    // --- 버그 수정: oldIndex 대신 ID로 링크를 찾아 제거 ---
                     const linkIndexToRemove = targetDashboard.links.findIndex(link => link.id === linkId);
                     if (linkIndexToRemove > -1) {
                         targetDashboard.links.splice(linkIndexToRemove, 1);
                     }
-                    // --- 버그 수정 끝 ---
 
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).update({
                         links: targetDashboard.links
@@ -1020,10 +1105,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                     showToast('링크 삭제 실패: ' + getFirebaseErrorMessage(error), 'error');
                     console.error("Link delete error:", error);
+                } finally {
+                    setLoadingState(deleteLinkBtn, false, '', `<span class="material-icons">delete</span>`);
                 }
             }
         } else {
-            // Direct click on link item (not action buttons)
             window.open(targetLink.url, '_blank');
         }
     });
@@ -1131,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         linksSortables = {};
 
         // Sortable for Dashboards (horizontal)
-        if (currentUserUid && isEmailVerified) { // 로그인 및 이메일 인증 시에만 드래그앤드롭 활성화
+        if (currentUserUid && isEmailVerified) {
             dashboardsSortable = Sortable.create(dashboardsContainer, {
                 animation: 150,
                 ghostClass: 'sortable-ghost',
@@ -1171,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const newIndex = evt.newIndex;
                             const fromDashboardId = evt.from.dataset.dashboardId;
                             const toDashboardId = evt.to.dataset.dashboardId;
-                            const draggedLinkId = evt.item.dataset.linkId; // 드래그된 항목의 ID를 가져옴
+                            const draggedLinkId = evt.item.dataset.linkId;
 
                             const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
                             const toDashboard = dashboards.find(d => d.id === toDashboardId);
@@ -1181,14 +1267,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
 
-                            // --- 버그 수정: oldOldIndex 대신 ID로 링크를 찾아 제거 ---
                             const movedLinkIndex = fromDashboard.links.findIndex(link => link.id === draggedLinkId);
                             if (movedLinkIndex === -1) {
                                 console.error('Dragged link not found in source dashboard links array.');
                                 return;
                             }
-                            const [movedLink] = fromDashboard.links.splice(movedLinkIndex, 1); // 정확한 항목 제거
-                            // --- 버그 수정 끝 ---
+                            const [movedLink] = fromDashboard.links.splice(movedLinkIndex, 1);
 
 
                             if (fromDashboardId === toDashboardId) {
@@ -1314,34 +1398,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Load & Auth State Change Listener ---
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            // 사용자 객체 리로드하여 최신 이메일 인증 상태 가져오기
-            // 특히 이메일 인증 링크 클릭 후 앱으로 돌아왔을 때 최신 상태를 반영하기 위함
-            await user.reload(); 
+            await user.reload();
             currentUserUid = user.uid;
-            isEmailVerified = user.emailVerified; 
+            isEmailVerified = user.emailVerified;
 
             if (isEmailVerified) {
-                // 이메일 인증된 사용자
                 loginScreen.classList.remove('active');
                 mainDashboardScreen.classList.add('active');
                 console.log("User logged in and email verified:", user.uid);
-                await loadData(); // Firestore에서 사용자 데이터 로드
+                await loadData();
                 if (!hasSeenTutorial) {
                     showTutorialStep(0);
                 }
             } else {
-                // 이메일 미인증 사용자 (로그인은 되어 있으나 기능 제한)
-                loginScreen.classList.remove('active'); // 로그인 화면에서 대시보드 화면으로 전환
-                mainDashboardScreen.classList.add('active');
-                dashboards = []; // 로컬 데이터는 초기화 (Firestore 로드 방지)
-                renderDashboards(); // 빈 대시보드를 렌더링
+                loginScreen.classList.remove('active');
+                mainDashboardScreen.classList.add('active'); // 대시보드 화면으로 일단 전환
+                dashboards = [];
+                renderDashboards();
                 showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요. 인증 전에는 기능 사용이 제한됩니다.', 'error');
                 console.log("User logged in but email not verified:", user.uid);
             }
         } else {
-            // 사용자 로그아웃됨
             currentUserUid = null;
-            isEmailVerified = false; // 인증 상태 초기화
+            isEmailVerified = false;
             mainDashboardScreen.classList.remove('active');
             loginScreen.classList.add('active');
             dashboards = [];
