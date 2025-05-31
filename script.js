@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const generalLoginBtn = document.getElementById('general-login-btn');
     const generalLoginForm = document.getElementById('general-login-form');
     const loginEmailInput = document.getElementById('login-email');
-    const loginPasswordInput = document = document.getElementById('login-password');
+    const loginPasswordInput = document.getElementById('login-password');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
     const signupSubmitBtn = document.getElementById('signup-submit-btn'); // 새로운 회원가입 버튼 DOM
     const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 DOM
@@ -1005,7 +1005,13 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
                 try {
-                    targetDashboard.links = targetDashboard.links.filter(link => link.id !== linkId);
+                    // --- 버그 수정: oldIndex 대신 ID로 링크를 찾아 제거 ---
+                    const linkIndexToRemove = targetDashboard.links.findIndex(link => link.id === linkId);
+                    if (linkIndexToRemove > -1) {
+                        targetDashboard.links.splice(linkIndexToRemove, 1);
+                    }
+                    // --- 버그 수정 끝 ---
+
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).update({
                         links: targetDashboard.links
                     });
@@ -1162,10 +1168,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         handle: '.link-item',
                         forceFallback: true,
                         onEnd: async function (evt) {
-                            const oldIndex = evt.oldOldIndex;
                             const newIndex = evt.newIndex;
                             const fromDashboardId = evt.from.dataset.dashboardId;
                             const toDashboardId = evt.to.dataset.dashboardId;
+                            const draggedLinkId = evt.item.dataset.linkId; // 드래그된 항목의 ID를 가져옴
 
                             const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
                             const toDashboard = dashboards.find(d => d.id === toDashboardId);
@@ -1175,7 +1181,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
 
-                            const [movedLink] = fromDashboard.links.splice(oldIndex, 1);
+                            // --- 버그 수정: oldOldIndex 대신 ID로 링크를 찾아 제거 ---
+                            const movedLinkIndex = fromDashboard.links.findIndex(link => link.id === draggedLinkId);
+                            if (movedLinkIndex === -1) {
+                                console.error('Dragged link not found in source dashboard links array.');
+                                return;
+                            }
+                            const [movedLink] = fromDashboard.links.splice(movedLinkIndex, 1); // 정확한 항목 제거
+                            // --- 버그 수정 끝 ---
+
 
                             if (fromDashboardId === toDashboardId) {
                                 toDashboard.links.splice(newIndex, 0, movedLink);
