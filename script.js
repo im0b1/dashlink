@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginEmailInput = document.getElementById('login-email');
     const loginPasswordInput = document.getElementById('login-password');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
-    // const guestLoginBtn = document.getElementById('guest-login-btn'); // Firebase 사용 시 제거
+    const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 추가
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Variables ---
     let dashboards = [];
-    // let isLoggedIn = false; // Firebase Auth로 대체
     let editingLinkId = null;
     let editingDashboardId = null;
     let currentDashboardIndex = 0;
@@ -76,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hasSeenTutorial = localStorage.getItem('hasSeenDashLinkTutorial') === 'true';
     let currentTutorialStep = 0;
     let currentUserUid = null; // 현재 로그인된 사용자의 UID
+    let isEmailVerified = false; // 이메일 인증 상태 추가
 
     const tutorialSteps = [
         {
@@ -105,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // --- Firebase 초기화 ---
-    // Firebase 콘솔에서 복사한 firebaseConfig 객체를 여기에 붙여넣으세요.
     const firebaseConfig = {
       apiKey: "AIzaSyBwNW34weqd9WjqyT0wQAoLCYKTfl2NKq0",
       authDomain: "dashlink-74f94.firebaseapp.com",
@@ -116,28 +115,22 @@ document.addEventListener('DOMContentLoaded', () => {
       measurementId: "G-F2YEHQ0FP8"
     };
 
-    // Firebase 앱 초기화
     const appFirebase = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(); // 인증 서비스 가져오기
-    const db = firebase.firestore(); // Firestore 서비스 가져오기
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const googleProvider = new firebase.auth.GoogleAuthProvider(); // GoogleAuthProvider 추가
 
     // --- Utility Functions ---
-
-    // generateUniqueId는 Firestore가 자체적으로 ID를 생성하므로 더 이상 필요하지 않을 수 있지만,
-    // 클라이언트 측에서 미리 ID를 할당하고 싶을 때 유용할 수 있습니다.
     const generateUniqueId = () => '_' + Math.random().toString(36).substr(2, 9);
 
-    // saveData 함수를 Firestore에 저장하는 함수로 대체
     const saveData = async () => {
         if (!currentUserUid) {
             console.warn("No user logged in. Data not saved to Firestore.");
             return;
         }
         try {
-            // 사용자 대시보드 컬렉션 참조
             const userDashboardsRef = db.collection('users').doc(currentUserUid).collection('dashboards');
             
-            // 기존 데이터 삭제 (간단한 구현을 위해, 실제로는 더 효율적인 방법 고려)
             const existingDocs = await userDashboardsRef.get();
             const batch = db.batch();
             existingDocs.forEach(doc => {
@@ -145,15 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             await batch.commit();
 
-            // 새 데이터 저장
             for (const dashboard of dashboards) {
                 const dashboardDocRef = userDashboardsRef.doc(dashboard.id);
-                // links 배열은 서브컬렉션으로 저장하거나, 아니면 doc에 직접 저장
-                // 여기서는 간단하게 doc에 직접 저장 (링크가 많아지면 서브컬렉션 고려)
                 await dashboardDocRef.set({
                     name: dashboard.name,
                     description: dashboard.description,
-                    links: dashboard.links // 배열 형태로 저장
+                    links: dashboard.links
                 });
             }
             console.log("Data saved to Firestore.");
@@ -163,10 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // loadData 함수를 Firestore에서 로드하는 함수로 대체
     const loadData = async () => {
-        if (!currentUserUid) {
-            dashboards = []; // 사용자 없을 시 데이터 초기화
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 데이터 로드 제한
+            dashboards = [];
             renderDashboards();
             return;
         }
@@ -176,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await userDashboardsRef.get();
             
             if (snapshot.empty) {
-                // 데이터가 없는 경우 초기 더미 데이터 로드 (첫 로그인 사용자용)
                 dashboards = [
                     {
                         id: generateUniqueId(),
@@ -196,12 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: doc.id,
                     name: doc.data().name,
                     description: doc.data().description,
-                    links: doc.data().links || [] // 링크가 없을 경우 대비
+                    links: doc.data().links || []
                 }));
                 console.log("Data loaded from Firestore.");
             }
             
-            // 현재 대시보드 인덱스 조정
             if (dashboards.length > 0) {
                 currentDashboardIndex = Math.max(0, Math.min(currentDashboardIndex, dashboards.length - 1));
             } else {
@@ -212,24 +199,30 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Error loading data from Firestore:", error);
             showToast("데이터 로드 실패: " + getFirebaseErrorMessage(error), 'error');
-            dashboards = []; // 에러 발생 시 데이터 초기화
+            dashboards = [];
             renderDashboards();
         }
     };
 
     // --- UI Rendering Functions (기존과 동일) ---
-
     const renderDashboards = (filterText = '') => {
         dashboardsContainer.innerHTML = '';
         dashboardPagination.innerHTML = '';
 
+        // 이메일 미인증 상태이거나 로그인하지 않았다면 빈 상태만 보여줌
+        if (!currentUserUid || !isEmailVerified) {
+             emptyDashboardsState.style.display = 'flex';
+             dashboardPagination.style.display = 'none';
+             // 메인 대시보드 화면이 활성화되지 않도록 처리 (onAuthStateChanged에서 제어)
+             return;
+        }
+
         if (dashboards.length === 0) {
             emptyDashboardsState.style.display = 'flex';
             dashboardPagination.style.display = 'none';
-            return;
         } else {
             emptyDashboardsState.style.display = 'none';
-            dashboardPagination.style.display = 'flex'; // Display pagination only if dashboards exist
+            dashboardPagination.style.display = 'flex';
         }
 
         dashboards.forEach((dashboard, index) => {
@@ -268,9 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dot.className = `pagination-dot ${index === currentDashboardIndex ? 'active' : ''}`;
             dot.dataset.index = index;
             dot.setAttribute('role', 'tab');
-            dot.setAttribute('aria-controls', `dashboard-${dashboard.id}`); // Link to dashboard card for a11y
+            dot.setAttribute('aria-controls', `dashboard-${dashboard.id}`);
             dot.setAttribute('aria-selected', index === currentDashboardIndex);
-            dot.setAttribute('tabindex', index === currentDashboardIndex ? '0' : '-1'); // Only current dot is tabbable
+            dot.setAttribute('tabindex', index === currentDashboardIndex ? '0' : '-1');
             dashboardPagination.appendChild(dot);
         });
 
@@ -403,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (focusableElements.length === 0) return;
 
         const firstFocusableEl = focusableElements[0];
-        const lastFocusableEl = focusableElements[focusableableElements.length - 1];
+        const lastFocusableEl = focusableElements[focusableElements.length - 1];
 
         modalElement.addEventListener('keydown', function(e) {
             const isTabPressed = (e.key === 'Tab');
@@ -540,6 +533,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '이메일 또는 비밀번호가 일치하지 않습니다.';
             case 'auth/too-many-requests':
                 return '로그인 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.';
+            case 'auth/popup-closed-by-user':
+                return '팝업창이 닫혔습니다. 다시 시도해주세요.';
+            case 'auth/cancelled-popup-request':
+                return '이미 팝업창 요청이 진행 중입니다.';
             default:
                 return '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.';
         }
@@ -611,20 +608,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Handlers ---
 
-    // General Login Button Toggle (기존과 동일)
+    // General Login Button Toggle (펼침 버그 수정)
     generalLoginBtn.addEventListener('click', () => {
-        const isVisible = generalLoginForm.classList.toggle('visible');
-        generalLoginBtn.setAttribute('aria-expanded', isVisible);
-        if (isVisible) {
-            generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
+        const isVisible = generalLoginForm.classList.contains('visible'); // 현재 'visible' 클래스 유무 확인
+
+        if (!isVisible) { // 폼이 숨겨져 있고, 펼치려 할 때
+            generalLoginForm.classList.add('visible'); // 'visible' 클래스 추가 (CSS로 opacity:1 및 margin-bottom 적용)
+            generalLoginForm.style.height = 'auto'; // 잠시 'auto'로 설정하여 전체 높이 계산
+            
+            // Reflow 강제 (브라우저가 'height: auto'를 적용하고 레이아웃을 다시 계산하도록)
+            // 이를 통해 scrollHeight가 정확한 값을 반환하도록 합니다.
+            void generalLoginForm.offsetWidth;
+
+            const fullHeight = generalLoginForm.scrollHeight; // 실제 높이 계산
+            generalLoginForm.style.height = '0'; // 트랜지션 시작을 위해 다시 0으로 설정
+            
+            // Reflow 강제 (브라우저가 'height: 0'를 적용하도록)
+            void generalLoginForm.offsetWidth;
+
+            generalLoginForm.style.height = `${fullHeight}px`; // 계산된 높이로 트랜지션 시작
+            generalLoginBtn.setAttribute('aria-expanded', 'true');
             loginEmailInput.focus();
-        } else {
-            generalLoginForm.style.height = '0';
+
+            // 트랜지션 완료 후 'height: auto'로 다시 설정하여 동적 콘텐츠(에러 메시지 등)에 대응
+            generalLoginForm.addEventListener('transitionend', function handler() {
+                if (generalLoginForm.classList.contains('visible')) { // 펼쳐진 상태일 때만 auto로 변경
+                    generalLoginForm.style.height = 'auto';
+                }
+                generalLoginForm.removeEventListener('transitionend', handler);
+            });
+
+        } else { // 폼이 펼쳐져 있고, 숨기려 할 때
+            generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`; // 현재 높이 캡처
+            generalLoginBtn.setAttribute('aria-expanded', 'false');
+            
+            // Reflow 강제
+            void generalLoginForm.offsetWidth;
+
+            generalLoginForm.style.height = '0'; // 접기 시작
+            // 트랜지션 완료 후 'visible' 클래스 제거하여 완전히 숨김 및 margin-bottom 제거
+            generalLoginForm.addEventListener('transitionend', function handler() {
+                generalLoginForm.classList.remove('visible');
+                generalLoginForm.removeEventListener('transitionend', handler);
+            });
         }
         setupFormValidation(generalLoginForm, loginSubmitBtn);
     });
 
-    // General Login Submission (Firebase Auth로 변경)
+    // General Login/Registration Submission (Firebase Auth로 변경 및 이메일 인증 추가)
     loginSubmitBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         if (!validateForm(generalLoginForm)) {
@@ -637,14 +668,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 기존 사용자 로그인 시도
-            await auth.signInWithEmailAndPassword(email, password);
-            showToast('로그인 성공!');
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            if (!userCredential.user.emailVerified) {
+                showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요.', 'info');
+                // 인증되지 않은 사용자에게는 로그아웃을 강제하거나 특정 화면을 보여줄 수 있습니다.
+                // 여기서는 로그인 성공으로 처리하되, onAuthStateChanged에서 검증합니다.
+            } else {
+                showToast('로그인 성공!');
+            }
         } catch (error) {
             if (error.code === 'auth/user-not-found') {
                 try {
                     // 새 사용자 가입 시도
-                    await auth.createUserWithEmailAndPassword(email, password);
-                    showToast('회원가입 및 로그인 성공! (계정이 없어서 새로 만들었습니다)');
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    // 가입 성공 후 이메일 인증 메일 전송
+                    await userCredential.user.sendEmailVerification();
+                    showToast('회원가입 성공! 이메일 인증 메일을 보냈습니다. 메일함을 확인해주세요.', 'info');
                 } catch (signupError) {
                     showToast('회원가입 실패: ' + getFirebaseErrorMessage(signupError), 'error');
                     console.error("Signup error:", signupError);
@@ -654,19 +693,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Login error:", error);
             }
         } finally {
-            generalLoginForm.classList.remove('visible');
-            generalLoginForm.style.height = '0';
+            // 로그인/가입 시도 후 폼 닫기
+            if (generalLoginForm.classList.contains('visible')) {
+                // Ensure correct collapsing animation from current height
+                generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
+                void generalLoginForm.offsetWidth; // Force reflow
+                generalLoginForm.style.height = '0';
+                generalLoginForm.addEventListener('transitionend', function handler() {
+                    generalLoginForm.classList.remove('visible');
+                    generalLoginForm.removeEventListener('transitionend', handler);
+                }, { once: true }); // Ensure listener runs only once
+            }
         }
     });
 
-    // Guest Login 제거 (HTML에서도 제거됨)
-    // guestLoginBtn.addEventListener('click', () => { ... });
+    // Google Login
+    googleLoginBtn.addEventListener('click', async () => {
+        try {
+            const result = await auth.signInWithPopup(googleProvider);
+            // const credential = result.credential; // Google Access Token (필요 시)
+            // const user = result.user; // 로그인된 사용자 정보
+            showToast('Google 로그인 성공!');
+        } catch (error) {
+            showToast('Google 로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
+            console.error("Google login error:", error);
+        }
+    });
+
 
     // Logout (Firebase Auth로 변경)
     logoutBtn.addEventListener('click', async () => {
         try {
             await auth.signOut();
             showToast('로그아웃 되었습니다.');
+            // 로그아웃 시 로컬 데이터 초기화 및 빈 화면 렌더링
+            dashboards = [];
+            renderDashboards();
         } catch (error) {
             showToast('로그아웃 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Logout error:", error);
@@ -709,8 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('대시보드 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
-        if (!currentUserUid) {
-            showToast('로그인이 필요합니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
+            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
             return;
         }
 
@@ -719,20 +781,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (editingDashboardId) {
-                // Firestore에서 업데이트
                 await db.collection('users').doc(currentUserUid).collection('dashboards').doc(editingDashboardId).update({
                     name: name,
                     description: description
                 });
                 showToast('대시보드가 수정되었습니다.');
             } else {
-                // Firestore에 새 문서 추가
                 const newDashboardRef = await db.collection('users').doc(currentUserUid).collection('dashboards').add({
                     name: name,
                     description: description,
                     links: []
                 });
-                // 새로 추가된 대시보드를 로컬 데이터에 반영 (Firestore ID 사용)
                 dashboards.push({
                     id: newDashboardRef.id,
                     name: name,
@@ -742,7 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentDashboardIndex = dashboards.length - 1;
                 showToast('새 대시보드가 추가되었습니다.');
             }
-            // 전체 대시보드 새로 로드 (Firestore 상태와 동기화)
             await loadData();
             closeDashboardModal();
         } catch (error) {
@@ -766,8 +824,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('링크 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
-        if (!currentUserUid) {
-            showToast('로그인이 필요합니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
+            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
             return;
         }
 
@@ -783,7 +841,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (editingLinkId) {
-                // 현재 대시보드의 링크 배열에서 해당 링크 업데이트
                 currentDashboard.links = currentDashboard.links.map(link =>
                     link.id === editingLinkId
                         ? { ...link, url, title: title || new URL(url).hostname, icon: favicon }
@@ -791,9 +848,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
                 showToast('링크가 수정되었습니다.');
             } else {
-                // 현재 대시보드의 링크 배열에 새 링크 추가
                 const newLink = {
-                    id: generateUniqueId(), // 클라이언트에서 ID 생성
+                    id: generateUniqueId(),
                     url: url,
                     title: title || new URL(url).hostname,
                     icon: favicon
@@ -802,7 +858,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('새 링크가 추가되었습니다.');
             }
 
-            // Firestore에서 해당 대시보드 문서 업데이트 (링크 배열 전체를 다시 저장)
             await db.collection('users').doc(currentUserUid).collection('dashboards').doc(currentDashboard.id).update({
                 links: currentDashboard.links
             });
@@ -846,6 +901,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Global Add Link button (adds to current dashboard) (기존과 동일)
     addLinkGlobalBtn.addEventListener('click', () => {
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
+            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+            return;
+        }
         if (dashboards.length === 0) {
             showToast('링크를 추가하려면 먼저 대시보드를 만들어주세요.', 'error');
             return;
@@ -862,6 +921,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardId = dashboardCard.dataset.dashboardId;
         const currentDashboard = dashboards.find(d => d.id === dashboardId);
         if (!currentDashboard) return;
+        
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
+            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+            return;
+        }
 
         if (e.target.closest('.edit-dashboard-btn')) {
             e.stopPropagation();
@@ -870,11 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             if (confirm(`'${currentDashboard.name}' 대시보드를 정말 삭제하시겠습니까? (포함된 링크도 모두 삭제됩니다)`)) {
                 try {
-                    // Firestore에서 대시보드 문서 삭제
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).delete();
                     showToast('대시보드가 삭제되었습니다.');
-                    // 로컬 데이터 및 UI 업데이트
-                    await loadData(); // Firestore에서 다시 로드하여 동기화
+                    await loadData();
                     if (dashboards.length > 0) {
                         if (currentDashboardIndex >= dashboards.length) {
                             currentDashboardIndex = dashboards.length - 1;
@@ -906,6 +968,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetLink = targetDashboard?.links.find(link => link.id === linkId);
         if (!targetLink) return;
 
+        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
+            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+            return;
+        }
+
         if (e.target.closest('.edit-link-btn')) {
             e.stopPropagation();
             openLinkModal('edit', targetLink);
@@ -913,9 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
                 try {
-                    // 로컬 데이터에서 링크 제거
                     targetDashboard.links = targetDashboard.links.filter(link => link.id !== linkId);
-                    // Firestore에서 대시보드 문서 업데이트 (링크 배열 전체를 다시 저장)
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).update({
                         links: targetDashboard.links
                     });
@@ -977,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            if (currentUserUid && dashboards.length > 0) {
+            if (currentUserUid && isEmailVerified && dashboards.length > 0) { // 이메일 인증 여부 확인 추가
                  scrollToDashboard(currentDashboardIndex, false);
             }
         }, 200);
@@ -1035,88 +1100,88 @@ document.addEventListener('DOMContentLoaded', () => {
         linksSortables = {};
 
         // Sortable for Dashboards (horizontal)
-        dashboardsSortable = Sortable.create(dashboardsContainer, {
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            chosenClass: 'sortable-chosen',
-            fallbackClass: 'sortable-fallback',
-            handle: '.dashboard-card-header',
-            forceFallback: true,
-            onEnd: async function (evt) { // async 추가
-                const oldIndex = evt.oldIndex;
-                const newIndex = evt.newIndex;
+        if (currentUserUid && isEmailVerified) { // 로그인 및 이메일 인증 시에만 드래그앤드롭 활성화
+            dashboardsSortable = Sortable.create(dashboardsContainer, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                fallbackClass: 'sortable-fallback',
+                handle: '.dashboard-card-header',
+                forceFallback: true,
+                onEnd: async function (evt) {
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
 
-                if (oldIndex !== newIndex) {
-                    const [movedDashboard] = dashboards.splice(oldIndex, 1);
-                    dashboards.splice(newIndex, 0, movedDashboard);
-                    await saveData(); // Firestore에 변경 사항 저장
-                    currentDashboardIndex = newIndex;
-                    updatePaginationDots();
-                    showToast('대시보드 순서가 변경되었습니다.');
-                    renderDashboards(searchInput.value); // UI 다시 렌더링
-                }
-            }
-        });
-
-        // Sortable for Links within each Dashboard (vertical)
-        dashboards.forEach(dashboard => {
-            const linksListElement = document.getElementById(`links-list-${dashboard.id}`);
-            if (linksListElement) {
-                linksSortables[dashboard.id] = Sortable.create(linksListElement, {
-                    animation: 150,
-                    group: 'links',
-                    ghostClass: 'sortable-ghost',
-                    chosenClass: 'sortable-chosen',
-                    fallbackClass: 'sortable-fallback',
-                    handle: '.link-item',
-                    forceFallback: true,
-                    onEnd: async function (evt) { // async 추가
-                        const oldIndex = evt.oldOldIndex;
-                        const newIndex = evt.newIndex;
-                        const fromDashboardId = evt.from.dataset.dashboardId;
-                        const toDashboardId = evt.to.dataset.dashboardId;
-
-                        const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
-                        const toDashboard = dashboards.find(d => d.id === toDashboardId);
-
-                        if (!fromDashboard || !toDashboard) {
-                            console.error('Source or target dashboard not found.');
-                            return;
-                        }
-
-                        const [movedLink] = fromDashboard.links.splice(oldIndex, 1);
-
-                        if (fromDashboardId === toDashboardId) {
-                            toDashboard.links.splice(newIndex, 0, movedLink);
-                            showToast('링크 순서가 변경되었습니다.');
-                        } else {
-                            toDashboard.links.splice(newIndex, 0, movedLink);
-                            showToast('링크가 다른 대시보드로 이동했습니다.');
-                        }
-                        
-                        // Firestore 업데이트
-                        try {
-                            // 변경된 두 대시보드 문서 업데이트
-                            await db.collection('users').doc(currentUserUid).collection('dashboards').doc(fromDashboardId).update({
-                                links: fromDashboard.links
-                            });
-                            if (fromDashboardId !== toDashboardId) {
-                                await db.collection('users').doc(currentUserUid).collection('dashboards').doc(toDashboardId).update({
-                                    links: toDashboard.links
-                                });
-                            }
-                            renderLinksForDashboard(fromDashboardId, `links-list-${fromDashboardId}`, searchInput.value);
-                            if (fromDashboardId !== toDashboardId) {
-                                renderLinksForDashboard(toDashboardId, `links-list-${toDashboardId}`, searchInput.value);
-                            }
-                        } catch (error) {
-                            showToast('링크 이동/순서 변경 실패: ' + getFirebaseErrorMessage(error), 'error');
-                            console.error("Sortable link update error:", error);
-                        }
+                    if (oldIndex !== newIndex) {
+                        const [movedDashboard] = dashboards.splice(oldIndex, 1);
+                        dashboards.splice(newIndex, 0, movedDashboard);
+                        await saveData();
+                        currentDashboardIndex = newIndex;
+                        updatePaginationDots();
+                        showToast('대시보드 순서가 변경되었습니다.');
+                        renderDashboards(searchInput.value);
                     }
-                });
-            }
-        });
+                }
+            });
+
+            // Sortable for Links within each Dashboard (vertical)
+            dashboards.forEach(dashboard => {
+                const linksListElement = document.getElementById(`links-list-${dashboard.id}`);
+                if (linksListElement) {
+                    linksSortables[dashboard.id] = Sortable.create(linksListElement, {
+                        animation: 150,
+                        group: 'links',
+                        ghostClass: 'sortable-ghost',
+                        chosenClass: 'sortable-chosen',
+                        fallbackClass: 'sortable-fallback',
+                        handle: '.link-item',
+                        forceFallback: true,
+                        onEnd: async function (evt) {
+                            const oldIndex = evt.oldOldIndex;
+                            const newIndex = evt.newIndex;
+                            const fromDashboardId = evt.from.dataset.dashboardId;
+                            const toDashboardId = evt.to.dataset.dashboardId;
+
+                            const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
+                            const toDashboard = dashboards.find(d => d.id === toDashboardId);
+
+                            if (!fromDashboard || !toDashboard) {
+                                console.error('Source or target dashboard not found.');
+                                return;
+                            }
+
+                            const [movedLink] = fromDashboard.links.splice(oldIndex, 1);
+
+                            if (fromDashboardId === toDashboardId) {
+                                toDashboard.links.splice(newIndex, 0, movedLink);
+                                showToast('링크 순서가 변경되었습니다.');
+                            } else {
+                                toDashboard.links.splice(newIndex, 0, movedLink);
+                                showToast('링크가 다른 대시보드로 이동했습니다.');
+                            }
+                            
+                            try {
+                                await db.collection('users').doc(currentUserUid).collection('dashboards').doc(fromDashboardId).update({
+                                    links: fromDashboard.links
+                                });
+                                if (fromDashboardId !== toDashboardId) {
+                                    await db.collection('users').doc(currentUserUid).collection('dashboards').doc(toDashboardId).update({
+                                        links: toDashboard.links
+                                    });
+                                }
+                                renderLinksForDashboard(fromDashboardId, `links-list-${fromDashboardId}`, searchInput.value);
+                                if (fromDashboardId !== toDashboardId) {
+                                    renderLinksForDashboard(toDashboardId, `links-list-${toDashboardId}`, searchInput.value);
+                                }
+                            } catch (error) {
+                                showToast('링크 이동/순서 변경 실패: ' + getFirebaseErrorMessage(error), 'error');
+                                console.error("Sortable link update error:", error);
+                            }
+                        }
+                    });
+                }
+            });
+        }
     };
 
     // --- Onboarding Tutorial Logic (기존과 동일) ---
@@ -1149,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tutorialStartBtn.addEventListener('click', () => showTutorialStep(tutorialSteps.length));
     tutorialSkipBtn.addEventListener('click', () => showTutorialStep(tutorialSteps.length));
 
-    // --- Global Keyboard Shortcuts (기존과 동일) ---
+    // --- Global Keyboard Shortcuts (이메일 인증 확인 추가) ---
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (linkModal.classList.contains('active')) {
@@ -1168,26 +1233,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cmd/Ctrl + L for Add Link
         if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
             e.preventDefault();
-            if (currentUserUid && !linkModal.classList.contains('active')) {
+            if (currentUserUid && isEmailVerified && !linkModal.classList.contains('active')) {
                 addLinkGlobalBtn.click();
             }
         }
         // Cmd/Ctrl + D for Add Dashboard
         if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
             e.preventDefault();
-            if (currentUserUid && !dashboardModal.classList.contains('active')) {
+            if (currentUserUid && isEmailVerified && !dashboardModal.classList.contains('active')) {
                 addDashboardGlobalBtn.click();
             }
         }
         // Cmd/Ctrl + F for Search
         if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
             e.preventDefault();
-            if (currentUserUid) {
+            if (currentUserUid && isEmailVerified) {
                 searchBtn.click();
             }
         }
         // Arrow key navigation for dashboards on desktop/tablet (when not in modal)
-        if (currentUserUid && !linkModal.classList.contains('active') && !dashboardModal.classList.contains('active') && !settingsModal.classList.contains('active') && !tutorialModal.classList.contains('active')) {
+        if (currentUserUid && isEmailVerified && !linkModal.classList.contains('active') && !dashboardModal.classList.contains('active') && !settingsModal.classList.contains('active') && !tutorialModal.classList.contains('active')) {
             if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 if (currentDashboardIndex < dashboards.length - 1) {
@@ -1208,33 +1273,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Initial Load & Auth State Change Listener ---
-    // Firebase 인증 상태 변경 리스너
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            // 사용자 로그인됨
             currentUserUid = user.uid;
-            loginScreen.classList.remove('active');
-            mainDashboardScreen.classList.add('active');
-            console.log("User logged in:", user.uid);
-            await loadData(); // Firestore에서 사용자 데이터 로드
-            if (!hasSeenTutorial) {
-                showTutorialStep(0);
+            isEmailVerified = user.emailVerified; // 이메일 인증 상태 업데이트
+
+            if (isEmailVerified) {
+                // 이메일 인증된 사용자
+                loginScreen.classList.remove('active');
+                mainDashboardScreen.classList.add('active');
+                console.log("User logged in and email verified:", user.uid);
+                await loadData();
+                if (!hasSeenTutorial) {
+                    showTutorialStep(0);
+                }
+            } else {
+                // 이메일 미인증 사용자
+                currentUserUid = null; // 인증되지 않은 사용자는 데이터 접근을 막기 위해 UID 초기화
+                mainDashboardScreen.classList.remove('active');
+                loginScreen.classList.add('active');
+                dashboards = []; // 데이터 초기화
+                renderDashboards(); // 로그인 화면으로 돌아가 빈 화면 렌더링
+                showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요.', 'error');
+                console.log("User logged in but email not verified:", user.uid);
+                // 로그인 폼이 접혀있다면 다시 펼쳐서 로그인/가입 유도
+                if (!generalLoginForm.classList.contains('visible')) {
+                     generalLoginBtn.click();
+                }
             }
         } else {
             // 사용자 로그아웃됨
             currentUserUid = null;
+            isEmailVerified = false; // 인증 상태 초기화
             mainDashboardScreen.classList.remove('active');
             loginScreen.classList.add('active');
-            dashboards = []; // 데이터 초기화
-            renderDashboards(); // 빈 화면 렌더링
+            dashboards = [];
+            renderDashboards();
             console.log("User logged out.");
         }
     });
 
-    // 페이지 로드 시 테마/색상 적용 (인증 상태와 관계없이)
     applyTheme(currentTheme);
     applyPrimaryColor(currentPrimaryColor);
-
-    // loadData는 onAuthStateChanged 콜백 내에서 호출되므로, 여기서는 필요 없습니다.
-    // 이전 localStorage.getItem('isLoggedInDashLink') 로직은 제거합니다.
 });
