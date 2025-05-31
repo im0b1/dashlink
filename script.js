@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const generalLoginBtn = document.getElementById('general-login-btn');
     const generalLoginForm = document.getElementById('general-login-form');
     const loginEmailInput = document.getElementById('login-email');
-    const loginPasswordInput = document.getElementById('login-password');
+    const loginPasswordInput = document = document.getElementById('login-password');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
     const signupSubmitBtn = document.getElementById('signup-submit-btn'); // 새로운 회원가입 버튼 DOM
     const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 DOM
@@ -522,7 +522,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Firebase 에러 메시지를 사용자 친화적으로 변환
     const getFirebaseErrorMessage = (error) => {
+        console.log("Firebase error code:", error.code); // 디버깅을 위해 에러 코드 로깅
         switch (error.code) {
+            case 'auth/invalid-login-credentials': // 추가된 에러 코드
+                return '이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해주세요.';
             case 'auth/email-already-in-use':
                 return '이미 사용 중인 이메일 주소입니다.';
             case 'auth/invalid-email':
@@ -533,10 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '비밀번호는 6자 이상이어야 합니다.';
             case 'auth/user-disabled':
                 return '비활성화된 사용자 계정입니다.';
-            case 'auth/user-not-found':
-                return '등록되지 않은 이메일입니다. 회원가입을 해주세요.'; // 로그인 전용 메시지
-            case 'auth/wrong-password':
-                return '비밀번호가 일치하지 않습니다.';
+            case 'auth/user-not-found': // 이 메시지는 loginSubmitBtn에서 발생하지 않음 (invalid-login-credentials로 통합됨)
+            case 'auth/wrong-password': // 이 메시지도 loginSubmitBtn에서 발생하지 않음 (invalid-login-credentials로 통합됨)
+                return '이메일 또는 비밀번호가 일치하지 않습니다.'; // 예비 메시지
             case 'auth/too-many-requests':
                 return '로그인/가입 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.';
             case 'auth/popup-closed-by-user':
@@ -675,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Login error:", error);
         } finally {
-            // 로그인 시도 후 폼 닫기 (항상 닫음)
+            // 로그인 시도 후 폼 닫기 (성공/실패와 관계없이 닫음)
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
                 void generalLoginForm.offsetWidth;
@@ -707,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('회원가입 실패: ' + getFirebaseErrorMessage(error), 'error');
             console.error("Signup error:", error);
         } finally {
-             // 가입 시도 후 폼 닫기 (항상 닫음)
+             // 가입 시도 후 폼 닫기 (성공/실패와 관계없이 닫음)
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
                 void generalLoginForm.offsetWidth;
@@ -1299,6 +1301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             // 사용자 객체 리로드하여 최신 이메일 인증 상태 가져오기
+            // 특히 이메일 인증 링크 클릭 후 앱으로 돌아왔을 때 최신 상태를 반영하기 위함
             await user.reload(); 
             currentUserUid = user.uid;
             isEmailVerified = user.emailVerified; 
