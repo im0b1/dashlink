@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tutorialContent = document.getElementById('tutorial-content');
     const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
     const tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
-    const tutorialNextBtn = document.getElementById('tutorial-next-btn');
+    const tutorialNextBtn = document = document.getElementById('tutorial-next-btn');
     const tutorialStartBtn = document.getElementById('tutorial-start-btn');
 
     const toastContainer = document.getElementById('toast-container');
@@ -139,11 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonElement.dataset.originalText = originalText || buttonElement.textContent; // 원래 텍스트 저장
             buttonElement.textContent = loadingText;
             buttonElement.disabled = true;
+            buttonElement.dataset.isloading = 'true'; // <--- 추가된 부분
             // 스피너를 추가하려면 여기에 코드를 추가할 수 있습니다.
             // 예: buttonElement.innerHTML = `<span class="loading-spinner-small"></span> ${loadingText}`;
         } else {
             buttonElement.textContent = buttonElement.dataset.originalText || originalText || "저장"; // 저장된 텍스트 또는 기본값 복원
             buttonElement.disabled = false;
+            delete buttonElement.dataset.isloading; // <--- 추가된 부분
             // 스피너를 제거하려면 여기에 코드를 추가할 수 있습니다.
         }
     };
@@ -464,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.add('hidden');
             el.style.height = '0';
         });
-        linkModalSaveBtn.disabled = true;
+        linkModalSaveBtn.disabled = true; // 초기 상태는 disabled
 
         if (type === 'add') {
             linkModalTitle.textContent = '새 링크 추가';
@@ -499,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.add('hidden');
             el.style.height = '0';
         });
-        dashboardModalSaveBtn.disabled = true;
+        dashboardModalSaveBtn.disabled = true; // 초기 상태는 disabled
 
         if (type === 'add') {
             dashboardModalTitle.textContent = '새 대시보드 추가';
@@ -570,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Form Validation Functions (기존과 동일) ---
+    // --- Form Validation Functions (수정된 부분) ---
     const validateForm = (formElement) => {
         let isValid = true;
         const inputs = formElement.querySelectorAll('input[required], textarea[required]');
@@ -623,8 +625,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkFormValidity = () => {
             const isValid = validateForm(formElement);
             saveButtons.forEach(button => {
-                // 로딩 상태가 아닌 경우에만 disabled를 변경
-                if (!button.disabled || button.dataset.isloading === 'true') { // 'true' 문자열로 비교
+                // 버튼이 로딩 상태가 아닌 경우에만 폼 유효성에 따라 disabled 상태를 변경합니다.
+                // 로딩 상태인 경우, setLoadingState에 의해 disabled 상태가 관리되므로 건드리지 않습니다.
+                if (button.dataset.isloading !== 'true') { // <--- 이 조건문이 수정되었습니다.
                      button.disabled = !isValid;
                 }
             });
@@ -635,7 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('blur', checkFormValidity);
         });
 
-        checkFormValidity();
+        checkFormValidity(); // 초기 유효성 검사 실행
     };
 
     // --- Event Handlers ---
@@ -702,11 +705,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Login error:", error);
         } finally {
             setLoadingState(loginSubmitBtn, false, "로그인");
-            setLoadingState(signupSubmitBtn, false);
-            setLoadingState(googleLoginBtn, false);
+            setLoadingState(signupSubmitBtn, false, "회원가입"); // 원래 텍스트 복원
+            setLoadingState(googleLoginBtn, false, "Google로 시작하기"); // 원래 텍스트 복원
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
-                void generalLoginForm.offsetWidth;
+                void generalLoginForm.offsetWidth; // Force reflow
                 generalLoginForm.style.height = '0';
                 generalLoginForm.addEventListener('transitionend', function handler() {
                     generalLoginForm.classList.remove('visible');
@@ -739,11 +742,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Signup error:", error);
         } finally {
             setLoadingState(signupSubmitBtn, false, "회원가입");
-            setLoadingState(loginSubmitBtn, false);
-            setLoadingState(googleLoginBtn, false);
+            setLoadingState(loginSubmitBtn, false, "로그인"); // 원래 텍스트 복원
+            setLoadingState(googleLoginBtn, false, "Google로 시작하기"); // 원래 텍스트 복원
             if (generalLoginForm.classList.contains('visible')) {
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
-                void generalLoginForm.offsetWidth;
+                void generalLoginForm.offsetWidth; // Force reflow
                 generalLoginForm.style.height = '0';
                 generalLoginForm.addEventListener('transitionend', function handler() {
                     generalLoginForm.classList.remove('visible');
@@ -767,8 +770,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Google login error:", error);
         } finally {
             setLoadingState(googleLoginBtn, false, "Google로 시작하기");
-            setLoadingState(loginSubmitBtn, false);
-            setLoadingState(signupSubmitBtn, false);
+            setLoadingState(loginSubmitBtn, false, "로그인"); // 원래 텍스트 복원
+            setLoadingState(signupSubmitBtn, false, "회원가입"); // 원래 텍스트 복원
         }
     });
 
@@ -794,9 +797,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Password reset error:", error);
         } finally {
             setLoadingState(forgotPasswordBtn, false, "비밀번호 재설정");
-            setLoadingState(loginSubmitBtn, false);
-            setLoadingState(signupSubmitBtn, false);
-            setLoadingState(googleLoginBtn, false);
+            setLoadingState(loginSubmitBtn, false, "로그인");
+            setLoadingState(signupSubmitBtn, false, "회원가입");
+            setLoadingState(googleLoginBtn, false, "Google로 시작하기");
         }
     });
 
@@ -1398,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Load & Auth State Change Listener ---
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            await user.reload();
+            await user.reload(); // 최신 사용자 상태를 가져옵니다.
             currentUserUid = user.uid;
             isEmailVerified = user.emailVerified;
 
