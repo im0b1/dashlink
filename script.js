@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginEmailInput = document.getElementById('login-email');
     const loginPasswordInput = document.getElementById('login-password');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
-    const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 추가
+    const signupSubmitBtn = document.getElementById('signup-submit-btn'); // 새로운 회원가입 버튼 DOM
+    const googleLoginBtn = document.getElementById('google-login-btn'); // Google 로그인 버튼 DOM
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -131,6 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const userDashboardsRef = db.collection('users').doc(currentUserUid).collection('dashboards');
             
+            // 기존 데이터 삭제 (간단한 구현을 위해, 실제로는 더 효율적인 방법 고려)
+            // 대시보드 순서 변경 및 링크 이동 시 배열을 통째로 덮어쓰므로 기존 문서를 삭제하는 것은 비효율적일 수 있습니다.
+            // 하지만 이 프로토타입에서는 데이터 동기화 문제를 피하기 위해 전체를 덮어쓰는 방식을 사용합니다.
             const existingDocs = await userDashboardsRef.get();
             const batch = db.batch();
             existingDocs.forEach(doc => {
@@ -154,7 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const loadData = async () => {
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 데이터 로드 제한
+        // 이메일 미인증 상태이거나 로그인하지 않았다면 데이터 로드 제한
+        if (!currentUserUid || !isEmailVerified) {
             dashboards = [];
             renderDashboards();
             return;
@@ -165,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const snapshot = await userDashboardsRef.get();
             
             if (snapshot.empty) {
+                // 데이터가 없는 경우 초기 더미 데이터 로드 (첫 로그인 사용자용)
                 dashboards = [
                     {
                         id: generateUniqueId(),
@@ -209,11 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardsContainer.innerHTML = '';
         dashboardPagination.innerHTML = '';
 
-        // 이메일 미인증 상태이거나 로그인하지 않았다면 빈 상태만 보여줌
+        // 이메일 미인증 상태이거나 로그인하지 않았다면 빈 상태만 보여줌 (데이터 로드 제한과 연결)
         if (!currentUserUid || !isEmailVerified) {
              emptyDashboardsState.style.display = 'flex';
              dashboardPagination.style.display = 'none';
-             // 메인 대시보드 화면이 활성화되지 않도록 처리 (onAuthStateChanged에서 제어)
              return;
         }
 
@@ -269,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         scrollToDashboard(currentDashboardIndex, false);
         updatePaginationDots();
-        initializeSortable();
+        initializeSortable(); // SortableJS 초기화 (인증 상태에 따라 내부적으로 조건부 처리)
     };
 
     const renderLinksForDashboard = (dashboardId, containerId, filterText = '') => {
@@ -453,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             linkFaviconInput.value = link.icon || '';
         }
         openModal(linkModal);
-        setupFormValidation(linkForm, linkModalSaveBtn);
+        setupFormValidation(linkForm, [linkModalSaveBtn]); // 배열로 전달
     };
 
     const closeLinkModal = () => {
@@ -486,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardDescriptionInput.value = dashboard.description || '';
         }
         openModal(dashboardModal);
-        setupFormValidation(dashboardForm, dashboardModalSaveBtn);
+        setupFormValidation(dashboardForm, [dashboardModalSaveBtn]); // 배열로 전달
     };
 
     const closeDashboardModal = () => {
@@ -529,10 +534,11 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'auth/user-disabled':
                 return '비활성화된 사용자 계정입니다.';
             case 'auth/user-not-found':
+                return '등록되지 않은 이메일입니다. 회원가입을 해주세요.'; // 로그인 전용 메시지
             case 'auth/wrong-password':
-                return '이메일 또는 비밀번호가 일치하지 않습니다.';
+                return '비밀번호가 일치하지 않습니다.';
             case 'auth/too-many-requests':
-                return '로그인 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.';
+                return '로그인/가입 시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.';
             case 'auth/popup-closed-by-user':
                 return '팝업창이 닫혔습니다. 다시 시도해주세요.';
             case 'auth/cancelled-popup-request':
@@ -543,8 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Form Validation Functions (기존과 동일) ---
-
+    // --- Form Validation Functions ---
     const validateForm = (formElement) => {
         let isValid = true;
         const inputs = formElement.querySelectorAll('input[required], textarea[required]');
@@ -591,11 +596,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return isValid;
     };
 
-    const setupFormValidation = (formElement, saveButton) => {
+    // saveButtons를 배열로 받도록 수정
+    const setupFormValidation = (formElement, saveButtons) => {
         const inputs = formElement.querySelectorAll('input[required], textarea[required]');
 
         const checkFormValidity = () => {
-            saveButton.disabled = !validateForm(formElement);
+            const isValid = validateForm(formElement);
+            saveButtons.forEach(button => {
+                button.disabled = !isValid;
+            });
         };
 
         inputs.forEach(input => {
@@ -610,56 +619,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // General Login Button Toggle (펼침 버그 수정)
     generalLoginBtn.addEventListener('click', () => {
-        const isVisible = generalLoginForm.classList.contains('visible'); // 현재 'visible' 클래스 유무 확인
+        const isVisible = generalLoginForm.classList.contains('visible');
 
-        if (!isVisible) { // 폼이 숨겨져 있고, 펼치려 할 때
-            generalLoginForm.classList.add('visible'); // 'visible' 클래스 추가 (CSS로 opacity:1 및 margin-bottom 적용)
-            generalLoginForm.style.height = 'auto'; // 잠시 'auto'로 설정하여 전체 높이 계산
-            
-            // Reflow 강제 (브라우저가 'height: auto'를 적용하고 레이아웃을 다시 계산하도록)
-            // 이를 통해 scrollHeight가 정확한 값을 반환하도록 합니다.
-            void generalLoginForm.offsetWidth;
-
-            const fullHeight = generalLoginForm.scrollHeight; // 실제 높이 계산
-            generalLoginForm.style.height = '0'; // 트랜지션 시작을 위해 다시 0으로 설정
-            
-            // Reflow 강제 (브라우저가 'height: 0'를 적용하도록)
-            void generalLoginForm.offsetWidth;
-
-            generalLoginForm.style.height = `${fullHeight}px`; // 계산된 높이로 트랜지션 시작
+        if (!isVisible) {
+            generalLoginForm.classList.add('visible');
             generalLoginBtn.setAttribute('aria-expanded', 'true');
             loginEmailInput.focus();
 
-            // 트랜지션 완료 후 'height: auto'로 다시 설정하여 동적 콘텐츠(에러 메시지 등)에 대응
-            generalLoginForm.addEventListener('transitionend', function handler() {
-                if (generalLoginForm.classList.contains('visible')) { // 펼쳐진 상태일 때만 auto로 변경
-                    generalLoginForm.style.height = 'auto';
-                }
-                generalLoginForm.removeEventListener('transitionend', handler);
+            requestAnimationFrame(() => { // 1차 렌더링 후
+                requestAnimationFrame(() => { // 2차 렌더링 (reflow) 후
+                    const fullHeight = generalLoginForm.scrollHeight;
+                    generalLoginForm.style.height = `${fullHeight}px`; // 실제 높이로 애니메이션 시작
+                    generalLoginForm.addEventListener('transitionend', function handler() {
+                        if (generalLoginForm.classList.contains('visible')) {
+                            generalLoginForm.style.height = 'auto'; // 애니메이션 완료 후 auto로 설정
+                        }
+                        generalLoginForm.removeEventListener('transitionend', handler);
+                    }, { once: true });
+                });
             });
 
-        } else { // 폼이 펼쳐져 있고, 숨기려 할 때
+        } else {
             generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`; // 현재 높이 캡처
             generalLoginBtn.setAttribute('aria-expanded', 'false');
             
-            // Reflow 강제
-            void generalLoginForm.offsetWidth;
-
-            generalLoginForm.style.height = '0'; // 접기 시작
-            // 트랜지션 완료 후 'visible' 클래스 제거하여 완전히 숨김 및 margin-bottom 제거
-            generalLoginForm.addEventListener('transitionend', function handler() {
-                generalLoginForm.classList.remove('visible');
-                generalLoginForm.removeEventListener('transitionend', handler);
+            requestAnimationFrame(() => { // 1차 렌더링 후
+                requestAnimationFrame(() => { // 2차 렌더링 (reflow) 후
+                    generalLoginForm.style.height = '0'; // 0으로 애니메이션 시작
+                    generalLoginForm.addEventListener('transitionend', function handler() {
+                        generalLoginForm.classList.remove('visible'); // 애니메이션 완료 후 클래스 제거
+                        generalLoginForm.removeEventListener('transitionend', handler);
+                    }, { once: true });
+                });
             });
         }
-        setupFormValidation(generalLoginForm, loginSubmitBtn);
+        // 로그인/회원가입 버튼 모두에 유효성 검사 적용
+        setupFormValidation(generalLoginForm, [loginSubmitBtn, signupSubmitBtn]);
     });
 
-    // General Login/Registration Submission (Firebase Auth로 변경 및 이메일 인증 추가)
+    // 일반 로그인 제출 (로그인 전용)
     loginSubmitBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         if (!validateForm(generalLoginForm)) {
-            showToast('로그인 정보를 올바르게 입력해주세요.', 'error');
+            showToast('이메일과 비밀번호를 올바르게 입력해주세요.', 'error');
             return;
         }
 
@@ -667,52 +669,61 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = loginPasswordInput.value.trim();
 
         try {
-            // 기존 사용자 로그인 시도
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            if (!userCredential.user.emailVerified) {
-                showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요.', 'info');
-                // 인증되지 않은 사용자에게는 로그아웃을 강제하거나 특정 화면을 보여줄 수 있습니다.
-                // 여기서는 로그인 성공으로 처리하되, onAuthStateChanged에서 검증합니다.
-            } else {
-                showToast('로그인 성공!');
-            }
+            await auth.signInWithEmailAndPassword(email, password);
+            showToast('로그인 성공!');
         } catch (error) {
-            if (error.code === 'auth/user-not-found') {
-                try {
-                    // 새 사용자 가입 시도
-                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                    // 가입 성공 후 이메일 인증 메일 전송
-                    await userCredential.user.sendEmailVerification();
-                    showToast('회원가입 성공! 이메일 인증 메일을 보냈습니다. 메일함을 확인해주세요.', 'info');
-                } catch (signupError) {
-                    showToast('회원가입 실패: ' + getFirebaseErrorMessage(signupError), 'error');
-                    console.error("Signup error:", signupError);
-                }
-            } else {
-                showToast('로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
-                console.error("Login error:", error);
-            }
+            showToast('로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
+            console.error("Login error:", error);
         } finally {
-            // 로그인/가입 시도 후 폼 닫기
+            // 로그인 시도 후 폼 닫기 (항상 닫음)
             if (generalLoginForm.classList.contains('visible')) {
-                // Ensure correct collapsing animation from current height
                 generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
-                void generalLoginForm.offsetWidth; // Force reflow
+                void generalLoginForm.offsetWidth;
                 generalLoginForm.style.height = '0';
                 generalLoginForm.addEventListener('transitionend', function handler() {
                     generalLoginForm.classList.remove('visible');
                     generalLoginForm.removeEventListener('transitionend', handler);
-                }, { once: true }); // Ensure listener runs only once
+                }, { once: true });
             }
         }
     });
 
-    // Google Login
+    // 회원가입 제출 (회원가입 전용)
+    signupSubmitBtn.addEventListener('click', async () => {
+        if (!validateForm(generalLoginForm)) {
+            showToast('이메일과 비밀번호를 올바르게 입력해주세요.', 'error');
+            return;
+        }
+
+        const email = loginEmailInput.value.trim();
+        const password = loginPasswordInput.value.trim();
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            await userCredential.user.sendEmailVerification(); // 이메일 인증 메일 전송
+            showToast('회원가입 성공! 이메일 인증 메일을 보냈습니다. 메일함을 확인해주세요.', 'info');
+            // 회원가입 후 자동으로 로그인되어 onAuthStateChanged가 처리하도록 함
+        } catch (error) {
+            showToast('회원가입 실패: ' + getFirebaseErrorMessage(error), 'error');
+            console.error("Signup error:", error);
+        } finally {
+             // 가입 시도 후 폼 닫기 (항상 닫음)
+            if (generalLoginForm.classList.contains('visible')) {
+                generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
+                void generalLoginForm.offsetWidth;
+                generalLoginForm.style.height = '0';
+                generalLoginForm.addEventListener('transitionend', function handler() {
+                    generalLoginForm.classList.remove('visible');
+                    generalLoginForm.removeEventListener('transitionend', handler);
+                }, { once: true });
+            }
+        }
+    });
+
+    // Google 로그인
     googleLoginBtn.addEventListener('click', async () => {
         try {
-            const result = await auth.signInWithPopup(googleProvider);
-            // const credential = result.credential; // Google Access Token (필요 시)
-            // const user = result.user; // 로그인된 사용자 정보
+            await auth.signInWithPopup(googleProvider);
             showToast('Google 로그인 성공!');
         } catch (error) {
             showToast('Google 로그인 실패: ' + getFirebaseErrorMessage(error), 'error');
@@ -721,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Logout (Firebase Auth로 변경)
+    // Logout (Firebase Auth)
     logoutBtn.addEventListener('click', async () => {
         try {
             await auth.signOut();
@@ -760,19 +771,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    // Add Dashboard Button (Header icon button and Empty State) (기존과 동일)
-    addDashboardGlobalBtn.addEventListener('click', () => openDashboardModal('add'));
-    emptyAddDashboardBtn.addEventListener('click', () => openDashboardModal('add'));
+    // Add Dashboard Button (Header icon button and Empty State) (이메일 인증 확인 추가)
+    addDashboardGlobalBtn.addEventListener('click', () => {
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
+            return;
+        }
+        openDashboardModal('add');
+    });
+    emptyAddDashboardBtn.addEventListener('click', () => {
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
+            return;
+        }
+        openDashboardModal('add');
+    });
 
-    // Dashboard Form Submission (Firestore로 변경)
+    // Dashboard Form Submission (Firestore) (이메일 인증 확인 추가)
     dashboardForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!validateForm(dashboardForm)) {
             showToast('대시보드 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
-            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
@@ -817,15 +840,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Link Form Submission (Firestore로 변경)
+    // Link Form Submission (Firestore) (이메일 인증 확인 추가)
     linkForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!validateForm(linkForm)) {
             showToast('링크 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
-            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
@@ -893,16 +916,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Invalid URL, already handled by validation.
                 } finally {
                     faviconLoadingSpinner.classList.add('hidden');
-                    setupFormValidation(linkForm, linkModalSaveBtn);
+                    setupFormValidation(linkForm, [linkModalSaveBtn]); // 배열로 전달
                 }
             }, 800);
         }
     });
 
-    // Global Add Link button (adds to current dashboard) (기존과 동일)
+    // Global Add Link button (adds to current dashboard) (이메일 인증 확인 추가)
     addLinkGlobalBtn.addEventListener('click', () => {
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
-            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
         if (dashboards.length === 0) {
@@ -922,8 +945,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentDashboard = dashboards.find(d => d.id === dashboardId);
         if (!currentDashboard) return;
         
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
-            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
@@ -968,8 +991,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetLink = targetDashboard?.links.find(link => link.id === linkId);
         if (!targetLink) return;
 
-        if (!currentUserUid || !isEmailVerified) { // 이메일 미인증 시 작업 제한
-            showToast('로그인이 필요하거나 이메일 인증이 완료되지 않았습니다.', 'error');
+        if (!currentUserUid || !isEmailVerified) {
+            showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
@@ -1037,12 +1060,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     });
 
-    // Ensure scroll position is correct on resize (기존과 동일)
+    // Ensure scroll position is correct on resize (이메일 인증 여부 확인 추가)
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            if (currentUserUid && isEmailVerified && dashboards.length > 0) { // 이메일 인증 여부 확인 추가
+            if (currentUserUid && isEmailVerified && dashboards.length > 0) {
                  scrollToDashboard(currentDashboardIndex, false);
             }
         }, 200);
@@ -1084,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- SortableJS Initialization (Firestore 데이터 변경 반영) ---
+    // --- SortableJS Initialization (Firestore 데이터 변경 반영 및 이메일 인증 확인 추가) ---
     let dashboardsSortable;
     let linksSortables = {};
 
@@ -1275,31 +1298,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Load & Auth State Change Listener ---
     auth.onAuthStateChanged(async (user) => {
         if (user) {
+            // 사용자 객체 리로드하여 최신 이메일 인증 상태 가져오기
+            await user.reload(); 
             currentUserUid = user.uid;
-            isEmailVerified = user.emailVerified; // 이메일 인증 상태 업데이트
+            isEmailVerified = user.emailVerified; 
 
             if (isEmailVerified) {
                 // 이메일 인증된 사용자
                 loginScreen.classList.remove('active');
                 mainDashboardScreen.classList.add('active');
                 console.log("User logged in and email verified:", user.uid);
-                await loadData();
+                await loadData(); // Firestore에서 사용자 데이터 로드
                 if (!hasSeenTutorial) {
                     showTutorialStep(0);
                 }
             } else {
-                // 이메일 미인증 사용자
-                currentUserUid = null; // 인증되지 않은 사용자는 데이터 접근을 막기 위해 UID 초기화
-                mainDashboardScreen.classList.remove('active');
-                loginScreen.classList.add('active');
-                dashboards = []; // 데이터 초기화
-                renderDashboards(); // 로그인 화면으로 돌아가 빈 화면 렌더링
-                showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요.', 'error');
+                // 이메일 미인증 사용자 (로그인은 되어 있으나 기능 제한)
+                loginScreen.classList.remove('active'); // 로그인 화면에서 대시보드 화면으로 전환
+                mainDashboardScreen.classList.add('active');
+                dashboards = []; // 로컬 데이터는 초기화 (Firestore 로드 방지)
+                renderDashboards(); // 빈 대시보드를 렌더링
+                showToast('이메일 인증이 필요합니다. 메일함을 확인해주세요. 인증 전에는 기능 사용이 제한됩니다.', 'error');
                 console.log("User logged in but email not verified:", user.uid);
-                // 로그인 폼이 접혀있다면 다시 펼쳐서 로그인/가입 유도
-                if (!generalLoginForm.classList.contains('visible')) {
-                     generalLoginBtn.click();
-                }
             }
         } else {
             // 사용자 로그아웃됨
