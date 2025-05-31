@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
+/* Default Light Theme */
 :root {
     --primary-color: #00C49F; /* Modern Green */
     --primary-light: #E0F7F3; /* Very light green for accents */
@@ -14,7 +15,62 @@
     --border-radius-card: 12px;
     --border-radius-button: 8px;
     --border-radius-input: 8px;
+    --error-color: #E53935;
 }
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: #2c2c2c;
+    --text-primary: #E0E0E0;
+    --text-secondary: #B0B0B0;
+    --bg-color: #3C3C3C;
+    --bg-light: #4A4A4A;
+    --border-color: #555555;
+    --shadow-light: 0px 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0px 4px 16px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .social-login-buttons button,
+body.dark-mode .dashboard-card-actions .btn-action,
+body.dark-mode .link-item,
+body.dark-mode .add-link-card-btn,
+body.dark-mode .modal-content,
+body.dark-mode .search-bar-container input,
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea,
+body.dark-mode .btn-icon-round,
+body.dark-mode .theme-toggle { /* Added btn-icon-round for dark mode */
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+body.dark-mode .social-login-buttons button:hover,
+body.dark-mode .dashboard-card-actions .btn-action:hover,
+body.dark-mode .link-item:hover,
+body.dark-mode .add-link-card-btn:hover,
+body.dark-mode .btn-icon-round:hover,
+body.dark-mode .theme-toggle:hover:not(.active) { /* Added btn-icon-round for dark mode */
+    background-color: var(--border-color);
+}
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group textarea:focus {
+    background-color: var(--bg-light); /* Keep dark background on focus */
+}
+body.dark-mode .btn-text {
+    color: var(--text-secondary);
+}
+body.dark-mode .btn-text .material-icons {
+    color: var(--text-secondary);
+}
+body.dark-mode .pagination-dot {
+    background-color: var(--border-color);
+}
+body.dark-mode .pagination-dot.active {
+    background-color: var(--primary-color);
+}
+body.dark-mode .color-swatch.active {
+    border-color: var(--text-primary);
+}
+
 
 * {
     box-sizing: border-box;
@@ -31,11 +87,12 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow: hidden; /* Prevent body scroll */
+    transition: background-color 0.3s ease;
 }
 
 #app {
     width: 100%;
-    max-width: 1200px; /* Wider for desktop, but still centered */
+    max-width: 1200px;
     height: 100vh;
     background-color: var(--bg-color);
     box-shadow: var(--shadow-medium);
@@ -44,6 +101,7 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .screen {
@@ -82,6 +140,7 @@ body {
     width: 100%;
     max-width: 380px;
     box-shadow: var(--shadow-light);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .login-card .logo {
@@ -89,12 +148,14 @@ body {
     font-weight: 700;
     color: var(--primary-color);
     margin-bottom: 8px;
+    transition: color 0.3s ease;
 }
 
 .login-card .tagline {
     font-size: 16px;
     color: var(--text-secondary);
     margin-bottom: 40px;
+    transition: color 0.3s ease;
 }
 
 .social-login-buttons button {
@@ -110,7 +171,7 @@ body {
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.3s ease;
 }
 
 .social-login-buttons button img {
@@ -121,7 +182,8 @@ body {
 .social-login-buttons button .material-icons {
     margin-right: 12px;
     font-size: 24px;
-    color: inherit; /* Ensure icon color respects button text color if set */
+    color: var(--text-primary); /* Default icon color */
+    transition: color 0.3s ease;
 }
 
 .social-login-buttons button:hover {
@@ -138,11 +200,10 @@ body {
     transition: height 0.4s ease-in-out, opacity 0.4s ease-in-out;
     opacity: 0;
     margin-bottom: 0;
-    /* Add padding here if needed, or ensure form-group handles it */
 }
 
 #general-login-form.visible {
-    height: auto; /* Will be set dynamically by JS */
+    height: auto; /* Managed by JS for scrollHeight */
     opacity: 1;
     margin-bottom: 20px; /* Add margin when visible */
 }
@@ -155,12 +216,22 @@ body {
 #general-login-form .form-group label {
     font-size: 14px;
     margin-bottom: 6px;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 
 #general-login-form .form-group input {
     padding: 10px;
     font-size: 15px;
     border-radius: var(--border-radius-input);
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-light);
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+#general-login-form .form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: var(--bg-color);
 }
 
 #general-login-form .btn-primary {
@@ -168,6 +239,12 @@ body {
     margin-top: 16px;
     padding: 12px 20px;
     /* This button now explicitly gets primary color from btn-primary */
+}
+#general-login-form .btn-primary:disabled {
+    background-color: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    transform: none;
 }
 
 
@@ -177,13 +254,14 @@ body {
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease, color 0.3s ease;
     border: none;
 }
 
 .btn-primary {
     background-color: var(--primary-color);
     color: white; /* Ensure text is white */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .btn-primary:hover {
@@ -205,11 +283,13 @@ body {
     color: var(--primary-color);
     padding: 8px 16px;
     font-size: 14px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 .btn-icon .material-icons {
     margin-right: 4px;
     font-size: 20px;
     color: var(--primary-color);
+    transition: color 0.3s ease;
 }
 .btn-icon:hover {
     background-color: #c9ede6;
@@ -223,12 +303,14 @@ body {
     color: var(--text-secondary);
     padding: 8px 12px;
     font-size: 14px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 .btn-text .material-icons {
     font-size: 20px;
     vertical-align: middle;
     margin-right: 4px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 .btn-text:hover {
     background-color: var(--bg-light);
@@ -236,6 +318,7 @@ body {
 .btn-text:active {
     transform: translateY(1px);
 }
+
 
 /* Main Dashboard Screen */
 #main-dashboard-screen {
@@ -248,55 +331,139 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 32px; /* Increased padding for desktop feel */
+    padding: 24px 32px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-color);
     flex-shrink: 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .main-title {
     font-size: 28px;
     font-weight: 700;
     color: var(--text-primary);
+    transition: color 0.3s ease;
 }
 
 .header-actions {
     display: flex;
-    gap: 16px;
+    align-items: center; /* Align items vertically in the group */
+    gap: 16px; /* Gap between the icon group and logout button */
 }
+
+/* New style for round icon buttons in header */
+.btn-icon-round {
+    width: 40px; /* Fixed width */
+    height: 40px; /* Fixed height */
+    border-radius: 50%; /* Make it round */
+    background-color: var(--bg-light); /* Default to background light */
+    color: var(--primary-color); /* Icon color */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--border-color); /* Add a subtle border */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, color 0.3s ease, border-color 0.3s ease;
+    flex-shrink: 0; /* Prevent shrinking on smaller screens */
+}
+.btn-icon-round .material-icons {
+    font-size: 24px; /* Larger icon */
+    color: var(--primary-color);
+    transition: color 0.3s ease;
+}
+.btn-icon-round:hover {
+    background-color: var(--primary-light); /* Lighter hover */
+    border-color: var(--primary-color); /* Primary border on hover */
+}
+.btn-icon-round:active {
+    transform: translateY(1px);
+}
+body.dark-mode .btn-icon-round {
+    background-color: var(--bg-light);
+    border-color: var(--border-color);
+}
+body.dark-mode .btn-icon-round .material-icons {
+    color: var(--primary-color); /* Icon color remains primary */
+}
+body.dark-mode .btn-icon-round:hover {
+    background-color: var(--border-color);
+}
+
+.icon-buttons-group {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping to next line */
+    gap: 8px; /* Gap between icon buttons */
+    justify-content: flex-end; /* Align to the right */
+}
+
+/* Search Bar */
+.search-bar-container {
+    padding: 12px 24px;
+    background-color: var(--bg-light);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease-in-out, height 0.3s ease-in-out, background-color 0.3s ease, border-color 0.3s ease;
+}
+.search-bar-container.visible {
+    opacity: 1;
+    height: 60px; /* Fixed height for the search bar */
+}
+.search-bar-container input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-input);
+    background-color: var(--bg-color);
+    font-size: 16px;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+.search-bar-container input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+.search-bar-container .btn-text {
+    padding: 4px;
+}
+
 
 .dashboards-container {
     flex-grow: 1;
     display: flex;
-    overflow-x: scroll; /* Enable horizontal scrolling for mobile */
-    scroll-snap-type: x mandatory; /* For smooth snapping on mobile */
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    height: calc(100% - 80px - 30px); /* Header height + pagination height */
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-    padding: 24px; /* Padding around the content area */
-    align-items: flex-start; /* Align cards to the top */
-    gap: 24px; /* Gap between cards */
+    height: calc(100% - 80px); /* Header height only, no pagination bottom */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    padding: 24px;
+    align-items: flex-start;
+    gap: 24px;
+    transition: background-color 0.3s ease;
 }
 
-.dashboards-container::-webkit-scrollbar { /* Chrome, Safari, Opera */
+.dashboards-container::-webkit-scrollbar {
     display: none;
 }
 
 .dashboard-card {
     flex-shrink: 0;
     width: calc(100% / 3 - (24px * 2 / 3)); /* Default to 3 cards on desktop */
-    min-width: 300px; /* Minimum width for each card */
+    min-width: 300px;
     background-color: var(--bg-color);
     border-radius: var(--border-radius-card);
     box-shadow: var(--shadow-light);
     display: flex;
     flex-direction: column;
     padding: 24px;
-    scroll-snap-align: start; /* Snap to start for mobile */
+    scroll-snap-align: start;
     height: calc(100% - 24px); /* Account for padding */
-    position: relative; /* For action buttons */
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Card hover effect */
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 .dashboard-card:hover {
     transform: translateY(-4px);
@@ -309,7 +476,12 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    cursor: grab; /* Indicates draggable area */
 }
+.dashboard-card-header:active {
+    cursor: grabbing;
+}
+
 
 .dashboard-card-info {
     flex-grow: 1;
@@ -320,12 +492,14 @@ body {
     font-weight: 700;
     margin-bottom: 4px;
     color: var(--text-primary);
+    transition: color 0.3s ease;
 }
 
 .dashboard-card-description {
     font-size: 14px;
     color: var(--text-secondary);
     line-height: 1.4;
+    transition: color 0.3s ease;
 }
 
 .dashboard-card-actions {
@@ -348,12 +522,13 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.3s ease;
 }
 
 .dashboard-card-actions .btn-action .material-icons {
     font-size: 18px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 .dashboard-card-actions .btn-action:hover {
     background-color: var(--border-color);
@@ -367,6 +542,7 @@ body {
     overflow-y: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    transition: background-color 0.3s ease;
 }
 .links-list::-webkit-scrollbar {
     display: none;
@@ -379,11 +555,15 @@ body {
     margin-bottom: 8px;
     background-color: var(--bg-light);
     border-radius: var(--border-radius-button);
-    cursor: pointer;
+    cursor: grab; /* Indicates draggable area */
     transition: background-color 0.2s ease, transform 0.1s ease;
     position: relative;
     text-decoration: none;
 }
+.link-item:active {
+    cursor: grabbing;
+}
+
 
 .link-item:hover {
     background-color: var(--border-color);
@@ -405,6 +585,7 @@ body {
     align-items: center;
     overflow: hidden;
     flex-shrink: 0;
+    transition: background-color 0.3s ease;
 }
 
 .link-item-favicon img {
@@ -415,6 +596,7 @@ body {
 .link-item-favicon .material-icons {
     font-size: 18px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 
 .link-item-title {
@@ -426,6 +608,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-right: 10px; /* Space for actions */
+    transition: color 0.3s ease;
 }
 
 .link-item-actions {
@@ -459,6 +642,7 @@ body {
 .link-item-actions .btn-action .material-icons {
     font-size: 16px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 .link-item-actions .btn-action:hover {
     background-color: var(--border-color);
@@ -475,7 +659,7 @@ body {
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease, color 0.3s ease;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -484,6 +668,7 @@ body {
     margin-right: 8px;
     font-size: 20px;
     color: var(--primary-color);
+    transition: color 0.3s ease;
 }
 .add-link-card-btn:hover {
     background-color: #c9ede6;
@@ -492,6 +677,7 @@ body {
     transform: translateY(1px);
 }
 
+/* Empty State */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -507,12 +693,14 @@ body {
     left: 0;
     background-color: var(--bg-light);
     z-index: 10;
+    transition: background-color 0.3s ease;
 }
 
 .empty-state .material-icons {
     font-size: 80px;
     color: var(--border-color);
     margin-bottom: 16px;
+    transition: color 0.3s ease;
 }
 
 .empty-state p {
@@ -520,11 +708,20 @@ body {
     line-height: 1.5;
     margin-bottom: 24px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 
 .empty-state .btn-primary {
     padding: 10px 24px;
 }
+.empty-state-link p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 20px;
+    transition: color 0.3s ease;
+}
+
 
 /* Dashboard Pagination (Mobile only) */
 .dashboard-pagination {
@@ -535,6 +732,7 @@ body {
     background-color: var(--bg-color);
     flex-shrink: 0;
     height: 30px;
+    transition: background-color 0.3s ease;
 }
 
 .pagination-dot {
@@ -583,7 +781,7 @@ body {
     max-width: 400px;
     box-shadow: var(--shadow-medium);
     transform: translateY(20px);
-    transition: transform 0.3s ease-out;
+    transition: transform 0.3s ease-out, background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .modal.active .modal-content {
@@ -596,10 +794,12 @@ body {
     margin-bottom: 24px;
     text-align: center;
     color: var(--primary-color);
+    transition: color 0.3s ease;
 }
 
 .form-group {
     margin-bottom: 16px;
+    position: relative; /* For error messages */
 }
 
 .form-group label {
@@ -608,6 +808,7 @@ body {
     font-weight: 500;
     margin-bottom: 8px;
     color: var(--text-secondary);
+    transition: color 0.3s ease;
 }
 
 .form-group input,
@@ -618,7 +819,7 @@ body {
     border-radius: var(--border-radius-input);
     font-size: 16px;
     background-color: var(--bg-light);
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.3s ease;
     resize: vertical;
     min-height: 40px;
 }
@@ -629,13 +830,32 @@ body {
     border-color: var(--primary-color);
     background-color: var(--bg-color);
 }
+.form-group input.invalid,
+.form-group textarea.invalid {
+    border-color: var(--error-color);
+}
 
 .form-group small {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 4px;
     display: block;
+    transition: color 0.3s ease;
 }
+.form-group .error-message {
+    font-size: 12px;
+    color: var(--error-color);
+    margin-top: 4px;
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
+}
+.form-group .error-message.visible {
+    height: auto;
+    opacity: 1;
+}
+
 
 .modal-actions {
     display: flex;
@@ -643,6 +863,118 @@ body {
     gap: 12px;
     margin-top: 24px;
 }
+.modal-actions .btn-primary:disabled {
+    background-color: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loading Spinner for Favicon/Title */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--primary-color);
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+.loading-spinner.hidden {
+    display: none;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+/* Settings Modal/Popover */
+.settings-popover {
+    align-items: flex-start; /* Align to top right */
+    justify-content: flex-end;
+    pointer-events: none; /* Allows clicks through when not active */
+    background-color: transparent; /* No dark overlay */
+}
+.settings-popover.active {
+    pointer-events: all;
+}
+.settings-popover .modal-content {
+    margin-top: 80px; /* Below header */
+    margin-right: 24px;
+    transform: translateY(-20px) scale(0.9);
+    transform-origin: top right;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out, background-color 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0;
+    max-width: 300px;
+    width: auto; /* Shrink to content */
+    padding: 20px;
+}
+.settings-popover.active .modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+.settings-popover h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+}
+.settings-group {
+    margin-bottom: 20px;
+}
+.settings-group h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+.theme-options, .color-options {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.theme-toggle {
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: var(--border-radius-button);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.3s ease, color 0.3s ease;
+}
+.theme-toggle.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+.theme-toggle:hover:not(.active) {
+    background-color: var(--border-color);
+}
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.color-swatch:hover {
+    transform: scale(1.1);
+}
+.color-swatch.active {
+    border-color: var(--text-primary); /* Border for selected color */
+}
+
+.settings-popover .modal-actions {
+    justify-content: center;
+}
+.settings-popover .modal-actions .btn-primary {
+    width: 100%;
+}
+
 
 /* Toast Messages */
 #toast-container {
@@ -687,7 +1019,7 @@ body {
     }
     .dashboard-card {
         width: calc(100% / 2 - (20px / 2)); /* 2 columns on medium screens */
-        min-width: unset; /* Remove min-width to allow more flexibility */
+        min-width: unset;
     }
     .header {
         padding: 16px 24px;
@@ -698,12 +1030,12 @@ body {
     .header-actions {
         gap: 10px;
     }
-    .btn-icon, .btn-text {
-        font-size: 13px;
-        padding: 6px 12px;
+    .btn-icon-round { /* Adjust round buttons for medium screens */
+        width: 36px;
+        height: 36px;
     }
-    .btn-icon .material-icons, .btn-text .material-icons {
-        font-size: 18px;
+    .btn-icon-round .material-icons {
+        font-size: 20px;
     }
     .dashboard-card-name {
         font-size: 18px;
@@ -719,6 +1051,10 @@ body {
         height: 20px;
         margin-right: 10px;
     }
+    /* Hide global FABs as they are now in header */
+    .global-action-buttons {
+        display: none;
+    }
 }
 
 
@@ -728,36 +1064,56 @@ body {
         box-shadow: none;
     }
     .dashboards-container {
-        flex-wrap: nowrap; /* Prevent wrapping */
-        padding: 0; /* Remove padding for full width cards */
-        gap: 0; /* Remove gap between cards */
+        flex-wrap: nowrap;
+        padding: 0;
+        gap: 0;
         scroll-snap-type: x mandatory;
-        height: calc(100% - 80px - 30px); /* Adjust height for pagination */
+        height: calc(100% - 80px - 30px);
     }
     .dashboard-card {
-        width: 100%; /* Full width on mobile */
-        height: 100%; /* Take full height */
-        border-radius: 0; /* No rounded corners on mobile cards */
-        box-shadow: none; /* No shadow on mobile cards */
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        box-shadow: none;
         padding: 20px;
     }
     .dashboard-pagination {
-        display: flex; /* Show pagination dots on mobile */
+        display: flex;
     }
     .header {
         padding: 12px 20px;
+        flex-direction: column; /* Stack header elements */
+        align-items: flex-start; /* Align header elements to start */
     }
     .main-title {
         font-size: 20px;
+        margin-bottom: 8px; /* Space between title and buttons */
     }
     .header-actions {
-        gap: 8px;
+        width: 100%; /* Take full width */
+        justify-content: space-between; /* Spread buttons */
+        gap: 0; /* Remove gap between groups */
+        align-items: flex-end; /* Align logout button to end */
     }
-    .btn-icon span:last-child, .btn-text span:last-child {
-        display: none; /* Hide text on small buttons to save space */
+    .icon-buttons-group {
+        width: auto; /* Allow buttons to size naturally */
+        flex-grow: 1; /* Take available space */
+        justify-content: flex-start; /* Align to start of group */
     }
-    .btn-icon, .btn-text {
-        padding: 8px; /* Square buttons */
+    .btn-icon-round {
+        width: 36px;
+        height: 36px;
+    }
+    .btn-icon-round .material-icons {
+        font-size: 20px;
+    }
+    .btn-text {
+        padding: 6px 10px; /* Adjust padding for smaller text button */
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+    .btn-text .material-icons {
+        font-size: 18px;
     }
     .login-card {
         padding: 24px;
@@ -769,4 +1125,52 @@ body {
         font-size: 14px;
         margin-bottom: 30px;
     }
+
+    .settings-popover .modal-content {
+        margin-top: 60px; /* Adjust for smaller header */
+        margin-right: 16px;
+    }
+}
+
+/* SortableJS ghost and chosen styles */
+.sortable-ghost {
+    opacity: 0.2;
+    background-color: var(--primary-light);
+    border: 1px dashed var(--primary-color);
+    box-shadow: none; /* Remove shadows for ghost item */
+    transform: none; /* Remove transform for ghost item */
+}
+.sortable-chosen {
+    opacity: 0.8;
+}
+.sortable-fallback {
+    /* Styles for when an item is being dragged */
+    box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2);
+    transform: rotate(2deg); /* Subtle rotation for dragging */
+}
+
+/* Tutorial styles */
+#tutorial-modal .modal-content {
+    max-width: 500px;
+    text-align: center;
+}
+#tutorial-modal .tutorial-content p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+#tutorial-modal .tutorial-img {
+    max-width: 80%;
+    height: auto;
+    margin: 20px auto;
+    display: block;
+    border-radius: var(--border-radius-card);
+    box-shadow: var(--shadow-light);
+}
+#tutorial-modal .tutorial-actions button {
+    min-width: 100px;
+}
+#tutorial-modal .tutorial-actions .btn-primary.hidden,
+#tutorial-modal .btn-text.hidden {
+    display: none;
 }
