@@ -146,10 +146,30 @@ body {
 .login-card .logo {
     font-size: 36px;
     font-weight: 700;
-    color: var(--primary-color);
     margin-bottom: 8px;
+    
+    /* --- 로고 이미지 추가를 위한 수정/추가 --- */
+    display: flex; /* flexbox 사용 */
+    align-items: center; /* 세로 중앙 정렬 */
+    justify-content: center; /* 가로 중앙 정렬 */
+    gap: 10px; /* 로고 이미지와 텍스트 사이 간격 */
+    /* --- 여기까지 수정/추가 --- */
+}
+
+/* 로고 텍스트에만 색상 및 트랜지션 적용 */
+.login-card .logo span {
+    color: var(--primary-color);
     transition: color 0.3s ease;
 }
+
+/* 로고 이미지 스타일 추가 */
+.login-card .logo .logo-image {
+    height: 36px; /* 폰트 사이즈와 맞추거나 적절히 조절 */
+    width: auto; /* 비율 유지 */
+    object-fit: contain; /* 이미지가 잘리지 않게 */
+}
+/* --- 로고 이미지 추가를 위한 수정/추가 끝 --- */
+
 
 .login-card .tagline {
     font-size: 16px;
