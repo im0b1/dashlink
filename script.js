@@ -1,4 +1,4 @@
-// Include SortableJS library: <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+// Include SortableJS library: <script src="<https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js>"></script>
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
@@ -14,13 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginSubmitBtn = document.getElementById('login-submit-btn');
     const signupSubmitBtn = document.getElementById('signup-submit-btn');
     const googleLoginBtn = document.getElementById('google-login-btn');
-    const forgotPasswordBtn = document = document.getElementById('forgot-password-btn'); // 비밀번호 재설정 버튼 추가
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
-    const dashboardMainTitle = document.getElementById('dashboard-main-title');
-    const addLinkGlobalBtn = document.getElementById('add-link-global-btn');
-    const addDashboardGlobalBtn = document.getElementById('add-dashboard-global-btn');
+    const dashboardMainTitle = document.getElementById('dashboard-main-title'); // LINO로 변경됨
+    const addLinkGlobalBtn = document.getElementById('add-link-global-btn'); // 새 항목 추가 버튼
+    const addDashboardGlobalBtn = document.getElementById('add-dashboard-global-btn'); // 새 투두리스트 추가 버튼
     const dashboardsContainer = document.getElementById('dashboards-container');
     const emptyDashboardsState = document.getElementById('empty-dashboards-state');
     const emptyAddDashboardBtn = document.getElementById('empty-add-dashboard-btn');
@@ -32,23 +32,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchCloseBtn = document.getElementById('search-close-btn');
 
     // Modals
-    const linkModal = document.getElementById('link-modal');
-    const linkModalTitle = document.getElementById('link-modal-title');
-    const linkForm = document.getElementById('link-form');
-    const linkUrlInput = document.getElementById('link-url');
-    const linkTitleInput = document.getElementById('link-title');
-    const linkFaviconInput = document.getElementById('link-favicon');
-    const linkModalCancelBtn = document.getElementById('link-modal-cancel-btn');
-    const linkModalSaveBtn = document.getElementById('link-modal-save-btn');
+    const itemModal = document.getElementById('item-modal'); // link-modal -> item-modal
+    const itemModalTitle = document.getElementById('item-modal-title'); // link-modal-title -> item-modal-title
+    const itemForm = document.getElementById('item-form'); // link-form -> item-form
+
+    // Item Type Selection (New)
+    const itemTypeTodoRadio = document.getElementById('item-type-todo');
+    const itemTypeLinkRadio = document.getElementById('item-type-link');
+
+    // Item Fields
+    const itemTextInput = document.getElementById('item-text-input'); // link-title -> item-text-input
+    const itemCompletedCheckbox = document.getElementById('item-completed-checkbox'); // New
+    const itemUrlInput = document.getElementById('item-url-input'); // link-url -> item-url-input
+    const itemLinkTitleInput = document.getElementById('item-link-title-input'); // New (was conceptually part of link-title)
+
+    // Form Groups for conditional display
+    const itemTextGroup = document.getElementById('item-text-group');
+    const itemCompletedGroup = document.getElementById('item-completed-group');
+    const itemUrlGroup = document.getElementById('item-url-group');
+    const itemLinkTitleGroup = document.getElementById('item-link-title-group');
+
+    const itemModalCancelBtn = document.getElementById('item-modal-cancel-btn'); // link-modal-cancel-btn -> item-modal-cancel-btn
+    const itemModalSaveBtn = document.getElementById('item-modal-save-btn'); // link-modal-save-btn -> item-modal-save-btn
     const faviconLoadingSpinner = document.getElementById('favicon-loading-spinner');
 
-    const dashboardModal = document.getElementById('dashboard-modal');
-    const dashboardModalTitle = document.getElementById('dashboard-modal-title');
-    const dashboardForm = document.getElementById('dashboard-form');
-    const dashboardNameInput = document.getElementById('dashboard-name');
-    const dashboardDescriptionInput = document.getElementById('dashboard-description');
-    const dashboardModalCancelBtn = document.getElementById('dashboard-modal-cancel-btn');
-    const dashboardModalSaveBtn = document.getElementById('dashboard-modal-save-btn');
+    const listModal = document.getElementById('list-modal'); // dashboard-modal -> list-modal
+    const listModalTitle = document.getElementById('list-modal-title'); // dashboard-modal-title -> list-modal-title
+    const listForm = document.getElementById('list-form'); // dashboard-form -> list-form
+    const listNameInput = document.getElementById('list-name-input'); // dashboard-name -> list-name
+    const listDescriptionInput = document.getElementById('list-description-input'); // dashboard-description -> list-description
+    const listModalCancelBtn = document.getElementById('list-modal-cancel-btn'); // dashboard-modal-cancel-btn -> list-modal-cancel-btn
+    const listModalSaveBtn = document.getElementById('list-modal-save-btn'); // dashboard-modal-save-btn -> list-modal-save-btn
 
     // Settings
     const settingsBtn = document.getElementById('settings-btn');
@@ -61,16 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const tutorialModal = document.getElementById('tutorial-modal');
     const tutorialContent = document.getElementById('tutorial-content');
     const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
-    const tutorialPrevBtn = document = document.getElementById('tutorial-prev-btn');
+    const tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
     const tutorialNextBtn = document.getElementById('tutorial-next-btn');
     const tutorialStartBtn = document.getElementById('tutorial-start-btn');
 
     const toastContainer = document.getElementById('toast-container');
 
     // --- State Variables ---
-    let dashboards = [];
-    let editingLinkId = null;
-    let editingDashboardId = null;
+    let dashboards = []; // Conceptually now 'todoLists'
+    let editingItemId = null; // editingLinkId -> editingItemId
+    let editingListId = null; // editingDashboardId -> editingListId
     let currentDashboardIndex = 0;
     let currentTheme = localStorage.getItem('dashLinkTheme') || 'light';
     let currentPrimaryColor = localStorage.getItem('dashLinkPrimaryColor') || '#00C49F';
@@ -79,30 +93,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUserUid = null;
     let isEmailVerified = false;
 
+    // Renamed tutorial steps to match LINO context
     const tutorialSteps = [
         {
-            title: 'DashLink에 오신 것을 환영합니다!',
-            content: 'DashLink는 공용 컴퓨터에서도 나만의 링크를 편리하게 관리할 수 있도록 도와줍니다. 이제 주요 기능을 알아볼까요?'
+            title: 'LINO에 오신 것을 환영합니다!',
+            content: 'LINO는 공용 컴퓨터에서도 나만의 할 일과 링크를 편리하게 관리할 수 있도록 도와줍니다. 이제 주요 기능을 알아볼까요?'
         },
         {
-            title: '대시보드 스와이프',
-            content: '각 카드는 하나의 "대시보드"입니다. 모바일에서는 좌우로 스와이프하여 다른 대시보드로 이동할 수 있습니다.',
-            image: 'https://via.placeholder.com/400x200?text=Dashboard+Swipe'
+            title: '투두리스트 탐색',
+            content: '각 카드는 하나의 "투두리스트"입니다. 마우스 휠 스크롤이나 모바일 스와이프를 통해 다른 리스트로 이동할 수 있습니다.',
+            image: '<https://via.placeholder.com/400x200?text=LINO+List+Swipe>'
         },
         {
-            title: '링크 추가 및 관리',
-            content: '각 대시보드 하단의 "새 링크 추가" 버튼을 눌러 링크를 추가할 수 있습니다. 추가된 링크는 클릭하여 이동하거나, 마우스 오버 시 나타나는 편집/삭제 버튼으로 관리할 수 있습니다.',
-            image: 'https://via.placeholder.com/400x200?text=Add+Link'
+            title: '할 일 및 링크 추가/관리',
+            content: '각 리스트 하단의 "새 항목 추가" 버튼을 눌러 할 일이나 링크를 추가할 수 있습니다. 할 일은 체크박스로 완료 처리하고, 항목 위에서 편집/삭제 버튼으로 관리하세요.',
+            image: '<https://via.placeholder.com/400x200?text=LINO+Add+Item>'
         },
         {
             title: '드래그 앤 드롭 정렬',
-            content: '링크 아이템을 길게 누르거나 대시보드 헤더를 잡고 드래그하여 순서를 바꾸거나 다른 대시보드로 옮길 수 있습니다.',
-            image: 'https://via.placeholder.com/400x200?text=Drag+Drop'
+            content: '항목을 길게 누르거나 리스트 헤더를 잡고 드래그하여 순서를 바꾸거나 다른 투두리스트로 옮길 수 있습니다.',
+            image: '<https://via.placeholder.com/400x200?text=LINO+Drag+Drop>'
         },
         {
             title: '검색 및 설정',
-            content: '우측 상단의 돋보기 아이콘으로 링크를 검색하고, 톱니바퀴 아이콘으로 다크 모드나 테마 색상을 변경할 수 있습니다.',
-            image: 'https://via.placeholder.com/400x200?text=Search+Settings'
+            content: '우측 상단의 돋보기 아이콘으로 항목을 검색하고, 톱니바퀴 아이콘으로 다크 모드나 테마 색상을 변경할 수 있습니다.',
+            image: '<https://via.placeholder.com/400x200?text=LINO+Search+Settings>'
         }
     ];
 
@@ -158,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         try {
             const userDashboardsRef = db.collection('users').doc(currentUserUid).collection('dashboards');
-            
+
             const existingDocs = await userDashboardsRef.get();
             const batch = db.batch();
             existingDocs.forEach(doc => {
@@ -166,12 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             await batch.commit();
 
-            for (const dashboard of dashboards) {
+            for (const dashboard of dashboards) { // dashboards는 이제 todoLists 역할을 함
                 const dashboardDocRef = userDashboardsRef.doc(dashboard.id);
                 await dashboardDocRef.set({
                     name: dashboard.name,
                     description: dashboard.description,
-                    links: dashboard.links
+                    items: dashboard.items // links -> items 로 변경
                 });
             }
             console.log("Data saved to Firestore.");
@@ -191,17 +206,28 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const userDashboardsRef = db.collection('users').doc(currentUserUid).collection('dashboards');
             const snapshot = await userDashboardsRef.get();
-            
+
             if (snapshot.empty) {
+                // Initial dummy data for LINO (todo and link items)
                 dashboards = [
                     {
                         id: generateUniqueId(),
-                        name: '자주 가는 링크',
-                        description: '매일 방문하는 사이트 모음입니다.',
-                        links: [
-                            { id: generateUniqueId(), url: 'https://www.google.com', title: 'Google', icon: 'https://www.google.com/favicon.ico' },
-                            { id: generateUniqueId(), url: 'https://mail.google.com', title: 'Gmail', icon: 'https://mail.google.com/favicon.ico' },
-                            { id: generateUniqueId(), url: 'https://www.youtube.com', title: 'YouTube', icon: 'https://www.youtube.com/favicon.ico' }
+                        name: '오늘 할 일',
+                        description: '매일 처리해야 할 항목들입니다.',
+                        items: [
+                            { id: generateUniqueId(), type: 'todo', text: '점심 식사 메뉴 정하기', completed: false },
+                            { id: generateUniqueId(), type: 'todo', text: '오후 회의 준비', completed: false, url: '<https://meet.google.com/abc-xyz>', linkTitle: '회의 링크', favicon: '<https://meet.google.com/favicon.ico>' },
+                            { id: generateUniqueId(), type: 'link', title: '자주 사용하는 웹사이트', url: '<https://www.google.com>', favicon: '<https://www.google.com/favicon.ico>' }
+                        ]
+                    },
+                    {
+                        id: generateUniqueId(),
+                        name: '쇼핑 리스트',
+                        description: '구매해야 할 물품 목록입니다.',
+                        items: [
+                            { id: generateUniqueId(), type: 'todo', text: '우유 구매', completed: false },
+                            { id: generateUniqueId(), type: 'todo', text: '달걀 구매', completed: true },
+                            { id: generateUniqueId(), type: 'link', title: '온라인 쇼핑몰', url: '<https://www.coupang.com>', favicon: '<https://www.coupang.com/favicon.ico>' }
                         ]
                     }
                 ];
@@ -212,11 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: doc.id,
                     name: doc.data().name,
                     description: doc.data().description,
-                    links: doc.data().links || []
+                    items: doc.data().items || [] // links -> items 로 변경
                 }));
                 console.log("Data loaded from Firestore.");
             }
-            
+
             if (dashboards.length > 0) {
                 currentDashboardIndex = Math.max(0, Math.min(currentDashboardIndex, dashboards.length - 1));
             } else {
@@ -232,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- UI Rendering Functions (기존과 동일) ---
+    // --- UI Rendering Functions ---
     const renderDashboards = (filterText = '') => {
         dashboardsContainer.innerHTML = '';
         dashboardPagination.innerHTML = '';
@@ -250,17 +276,17 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyDashboardsState.style.display = 'none';
             // Note: The CSS handles hiding pagination dots on desktop (width > 600px).
             // This line just ensures it's 'flex' for mobile where it's needed.
-            dashboardPagination.style.display = 'flex'; 
+            dashboardPagination.style.display = 'flex';
         }
 
-        dashboards.forEach((dashboard, index) => {
+        dashboards.forEach((dashboard, index) => { // dashboard는 이제 todoList 역할을 함
             const dashboardCard = document.createElement('div');
             dashboardCard.className = 'dashboard-card';
             dashboardCard.dataset.dashboardId = dashboard.id;
             dashboardCard.setAttribute('role', 'region');
-            dashboardCard.setAttribute('aria-label', `${dashboard.name} 대시보드`);
+            dashboardCard.setAttribute('aria-label', `${dashboard.name} 투두리스트`); // aria-label 변경
 
-            const linkListId = `links-list-${dashboard.id}`;
+            const itemListId = `items-list-${dashboard.id}`; // linkListId -> itemListId
 
             dashboardCard.innerHTML = `
                 <div class="dashboard-card-header">
@@ -269,21 +295,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="dashboard-card-description">${dashboard.description || '설명 없음'}</p>
                     </div>
                     <div class="dashboard-card-actions">
-                        <button class="btn-action edit-dashboard-btn" title="대시보드 편집" aria-label="대시보드 편집" data-dashboard-id="${dashboard.id}"><span class="material-icons">edit</span></button>
-                        <button class="btn-action delete-dashboard-btn" title="대시보드 삭제" aria-label="대시보드 삭제" data-dashboard-id="${dashboard.id}"><span class="material-icons">delete</span></button>
+                        <button class="btn-action edit-list-btn" title="투두리스트 편집" aria-label="투두리스트 편집" data-list-id="${dashboard.id}"><span class="material-icons">edit</span></button>
+                        <button class="btn-action delete-list-btn" title="투두리스트 삭제" aria-label="투두리스트 삭제" data-list-id="${dashboard.id}"><span class="material-icons">delete</span></button>
                     </div>
                 </div>
-                <ul id="${linkListId}" class="links-list" data-dashboard-id="${dashboard.id}" role="list" aria-label="${dashboard.name} 링크 목록">
-                    <!-- Links for this dashboard -->
+                <ul id="${itemListId}" class="links-list" data-dashboard-id="${dashboard.id}" role="list" aria-label="${dashboard.name} 항목 목록">
+                    <!-- Items for this list -->
                 </ul>
-                <button class="add-link-card-btn" data-dashboard-id="${dashboard.id}" aria-label="새 링크 추가">
+                <button class="add-link-card-btn" data-dashboard-id="${dashboard.id}" aria-label="새 항목 추가">
                     <span class="material-icons">add</span>
-                    새 링크 추가
+                    새 항목 추가
                 </button>
             `;
             dashboardsContainer.appendChild(dashboardCard);
 
-            renderLinksForDashboard(dashboard.id, linkListId, filterText);
+            renderListItems(dashboard.id, itemListId, filterText); // renderLinksForDashboard -> renderListItems
 
             const dot = document.createElement('div');
             dot.className = `pagination-dot ${index === currentDashboardIndex ? 'active' : ''}`;
@@ -300,48 +326,78 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeSortable();
     };
 
-    const renderLinksForDashboard = (dashboardId, containerId, filterText = '') => {
+    // renderLinksForDashboard -> renderListItems
+    const renderListItems = (dashboardId, containerId, filterText = '') => {
         const dashboard = dashboards.find(d => d.id === dashboardId);
         if (!dashboard) return;
 
-        const linksList = document.getElementById(containerId);
-        if (!linksList) return;
+        const itemsList = document.getElementById(containerId); // linksList -> itemsList
+        if (!itemsList) return;
 
-        linksList.innerHTML = '';
+        itemsList.innerHTML = '';
 
-        const filteredLinks = dashboard.links.filter(link =>
-            link.title.toLowerCase().includes(filterText.toLowerCase()) ||
-            link.url.toLowerCase().includes(filterText.toLowerCase())
-        );
+        const filteredItems = dashboard.items.filter(item => { // link -> item, dashboard.links -> dashboard.items
+            const searchText = filterText.toLowerCase();
+            if (item.type === 'todo') {
+                return item.text.toLowerCase().includes(searchText) || (item.linkTitle && item.linkTitle.toLowerCase().includes(searchText));
+            } else if (item.type === 'link') {
+                return item.title.toLowerCase().includes(searchText) || item.url.toLowerCase().includes(searchText);
+            }
+            return false;
+        });
 
-        if (filteredLinks.length === 0) {
-            linksList.innerHTML = `
+        if (filteredItems.length === 0) {
+            itemsList.innerHTML = `
                 <li class="empty-state-link">
-                    <p>검색 결과가 없거나<br>아직 링크가 없어요.</p>
+                    <p>검색 결과가 없거나<br>아직 항목이 없어요.</p>
                 </li>
             `;
         } else {
-            filteredLinks.forEach(link => {
-                const linkItem = document.createElement('li');
-                linkItem.className = 'link-item';
-                linkItem.dataset.linkId = link.id;
-                linkItem.dataset.url = link.url;
-                linkItem.setAttribute('role', 'listitem');
-                linkItem.setAttribute('tabindex', '0');
+            filteredItems.forEach(item => { // link -> item
+                const listItem = document.createElement('li'); // linkItem -> listItem
+                listItem.className = `list-item ${item.completed ? 'completed' : ''}`; // list-item, completed 클래스 추가
+                listItem.dataset.itemId = item.id;
+                listItem.dataset.dashboardId = dashboard.id; // 부모 대시보드 ID 저장
+                listItem.dataset.itemType = item.type; // 항목 유형 저장
+                listItem.setAttribute('role', 'listitem');
+                listItem.setAttribute('tabindex', '0');
 
-                const faviconHtml = link.icon ? `<img src="${link.icon}" alt="${link.title} favicon">` : `<span class="material-icons">link</span>`;
+                let itemFaviconHtml = '';
+                let itemContentText = '';
+                let itemContentTitleAttr = '';
 
-                linkItem.innerHTML = `
-                    <div class="link-item-favicon">
-                        ${faviconHtml}
+                if (item.type === 'todo') {
+                    // 투두 아이템의 내용
+                    itemContentText = item.text;
+                    itemContentTitleAttr = item.text; // 툴팁은 할 일 내용
+                    // 투두 아이템에 링크가 있을 경우 파비콘 렌더링
+                    if (item.url && item.favicon) {
+                        itemFaviconHtml = `<img src="${item.favicon}" alt="Favicon">`;
+                    } else {
+                        itemFaviconHtml = `<span class="material-icons">task</span>`; // 기본 투두 아이콘
+                    }
+                } else { // type === 'link'
+                    // 링크 아이템의 제목 및 URL
+                    itemContentText = item.title;
+                    itemContentTitleAttr = item.title; // 툴팁은 링크 제목
+                    itemFaviconHtml = item.favicon ? `<img src="${item.favicon}" alt="${item.title} favicon">` : `<span class="material-icons">link</span>`;
+                }
+
+                listItem.innerHTML = `
+                    <div class="item-status">
+                        <input type="checkbox" class="item-checkbox" ${item.type === 'todo' && item.completed ? 'checked' : ''} ${item.type !== 'todo' ? 'disabled' : ''}>
+                        <div class="status-separator"></div>
                     </div>
-                    <div class="link-item-title" title="${link.title}">${link.title}</div>
-                    <div class="link-item-actions">
-                        <button class="btn-action edit-link-btn" title="편집" aria-label="${link.title} 링크 편집" data-link-id="${link.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">edit</span></button>
-                        <button class="btn-action delete-link-btn" title="삭제" aria-label="${link.title} 링크 삭제" data-link-id="${link.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">delete</span></button>
+                    <div class="item-favicon ${!item.url && item.type === 'todo' ? 'hidden' : ''}"> <!-- 순수 투두일 경우 파비콘 숨김 -->
+                        ${itemFaviconHtml}
+                    </div>
+                    <div class="item-content" title="${itemContentTitleAttr}">${itemContentText}</div>
+                    <div class="item-actions">
+                        <button class="btn-action edit-item-btn" title="편집" aria-label="${itemContentText} 항목 편집" data-item-id="${item.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">edit</span></button>
+                        <button class="btn-action delete-item-btn" title="삭제" aria-label="${itemContentText} 항목 삭제" data-item-id="${item.id}" data-dashboard-id="${dashboard.id}"><span class="material-icons">delete</span></button>
                     </div>
                 `;
-                linksList.appendChild(linkItem);
+                itemsList.appendChild(listItem);
             });
         }
     };
@@ -372,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
             behavior: smooth ? 'smooth' : 'auto'
         };
         dashboardsContainer.scrollTo(scrollOptions);
-        
+
         const currentCard = dashboardsContainer.children[index];
         if (currentCard) {
             currentCard.focus();
@@ -393,17 +449,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const applyPrimaryColor = (color) => {
         document.documentElement.style.setProperty('--primary-color', color);
-        
-        const hexToRgb = hex => hex.match(/\w\w/g).map(x => parseInt(x, 16));
+
+        const hexToRgb = hex => hex.match(/\\w\\w/g).map(x => parseInt(x, 16));
         const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('');
-        
+
         const [r, g, b] = hexToRgb(color);
         const lightR = Math.min(255, r + (255 - r) * 0.7);
         const lightG = Math.min(255, g + (255 - g) * 0.7);
         const lightB = Math.min(255, b + (255 - b) * 0.7);
 
         document.documentElement.style.setProperty('--primary-light', rgbToHex(lightR, lightG, lightB));
-        
+
         localStorage.setItem('dashLinkPrimaryColor', color);
         currentPrimaryColor = color;
 
@@ -416,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Modal Functions (기존과 동일) ---
+    // --- Modal Functions ---
     let lastFocusedElement = null;
 
     const trapFocus = (modalElement) => {
@@ -459,69 +515,122 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const openLinkModal = (type, link = null) => {
-        linkForm.reset();
-        editingLinkId = null;
-        linkUrlInput.classList.remove('invalid');
-        linkTitleInput.classList.remove('invalid');
-        linkForm.querySelectorAll('.error-message').forEach(el => {
+    // Function to toggle item modal fields based on type
+    const toggleItemModalFields = (type) => {
+        if (type === 'todo') {
+            itemTextGroup.classList.remove('hidden');
+            itemCompletedGroup.classList.remove('hidden');
+            itemUrlGroup.classList.add('hidden');
+            itemLinkTitleGroup.classList.add('hidden');
+            itemTextInput.setAttribute('required', 'true');
+            itemUrlInput.removeAttribute('required');
+            itemLinkTitleInput.removeAttribute('required');
+            // Clear URL/Link Title when switching to Todo
+            itemUrlInput.value = '';
+            itemLinkTitleInput.value = '';
+        } else if (type === 'link') {
+            itemTextGroup.classList.add('hidden');
+            itemCompletedGroup.classList.add('hidden');
+            itemUrlGroup.classList.remove('hidden');
+            itemLinkTitleGroup.classList.remove('hidden');
+            itemTextInput.removeAttribute('required');
+            itemUrlInput.setAttribute('required', 'true');
+            itemLinkTitleInput.setAttribute('required', 'true');
+            // Clear Todo Text/Completed when switching to Link
+            itemTextInput.value = '';
+            itemCompletedCheckbox.checked = false;
+        }
+        itemForm.querySelectorAll('.error-message').forEach(el => { // Clear error messages on type change
             el.classList.add('hidden');
             el.style.height = '0';
         });
-        linkModalSaveBtn.disabled = true; // 초기 상태는 disabled
+        setupFormValidation(itemForm, [itemModalSaveBtn]);
+    };
+
+    // openLinkModal -> openItemModal
+    const openItemModal = (type, item = null) => { // item은 이제 링크 또는 투두 항목
+        itemForm.reset();
+        editingItemId = null;
+        itemTextInput.classList.remove('invalid');
+        itemUrlInput.classList.remove('invalid');
+        itemLinkTitleInput.classList.remove('invalid');
+        itemForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
+        itemModalSaveBtn.disabled = true; // 초기 상태는 disabled
+
+        // Set radio button and toggle fields based on item type
+        let currentItemType = 'todo'; // Default to todo for new items
+        if (type === 'add') {
+            itemModalTitle.textContent = '새 항목 추가';
+            itemTypeTodoRadio.checked = true;
+        } else if (type === 'edit' && item) {
+            itemModalTitle.textContent = '항목 편집';
+            editingItemId = item.id;
+            currentItemType = item.type;
+
+            if (item.type === 'todo') {
+                itemTypeTodoRadio.checked = true;
+                itemTextInput.value = item.text || '';
+                itemCompletedCheckbox.checked = item.completed || false;
+                itemUrlInput.value = item.url || '';
+                itemLinkTitleInput.value = item.linkTitle || '';
+            } else if (item.type === 'link') {
+                itemTypeLinkRadio.checked = true;
+                itemUrlInput.value = item.url || '';
+                itemLinkTitleInput.value = item.title || ''; // link title is 'title' for type 'link'
+            }
+        }
+        toggleItemModalFields(currentItemType);
+        openModal(itemModal);
+        // Focus first relevant input after fields are toggled
+        if (currentItemType === 'todo') itemTextInput.focus();
+        else itemUrlInput.focus();
+    };
+
+    // closeLinkModal -> closeItemModal
+    const closeItemModal = () => {
+        closeModal(itemModal);
+        editingItemId = null;
+        itemTextInput.classList.remove('invalid');
+        itemUrlInput.classList.remove('invalid');
+        itemLinkTitleInput.classList.remove('invalid');
+        itemForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
+    };
+
+    // openDashboardModal -> openListModal
+    const openListModal = (type, list = null) => { // dashboard -> list
+        listForm.reset();
+        editingListId = null; // editingDashboardId -> editingListId
+        listNameInput.classList.remove('invalid'); // dashboardNameInput -> listNameInput
+        listForm.querySelectorAll('.error-message').forEach(el => {
+            el.classList.add('hidden');
+            el.style.height = '0';
+        });
+        listModalSaveBtn.disabled = true; // 초기 상태는 disabled
 
         if (type === 'add') {
-            linkModalTitle.textContent = '새 링크 추가';
-            linkFaviconInput.value = '';
-        } else if (type === 'edit' && link) {
-            linkModalTitle.textContent = '링크 편집';
-            editingLinkId = link.id;
-            linkUrlInput.value = link.url;
-            linkTitleInput.value = link.title;
-            linkFaviconInput.value = link.icon || '';
+            listModalTitle.textContent = '새 투두리스트 추가'; // 타이틀 변경
+        } else if (type === 'edit' && list) { // dashboard -> list
+            listModalTitle.textContent = '투두리스트 편집'; // 타이틀 변경
+            editingListId = list.id;
+            listNameInput.value = list.name;
+            listDescriptionInput.value = list.description || '';
         }
-        openModal(linkModal);
-        setupFormValidation(linkForm, [linkModalSaveBtn]);
+        openModal(listModal);
+        setupFormValidation(listForm, [listModalSaveBtn]);
     };
 
-    const closeLinkModal = () => {
-        closeModal(linkModal);
-        editingLinkId = null;
-        linkUrlInput.classList.remove('invalid');
-        linkTitleInput.classList.remove('invalid');
-        linkForm.querySelectorAll('.error-message').forEach(el => {
-            el.classList.add('hidden');
-            el.style.height = '0';
-        });
-    };
-
-    const openDashboardModal = (type, dashboard = null) => {
-        dashboardForm.reset();
-        editingDashboardId = null;
-        dashboardNameInput.classList.remove('invalid');
-        dashboardForm.querySelectorAll('.error-message').forEach(el => {
-            el.classList.add('hidden');
-            el.style.height = '0';
-        });
-        dashboardModalSaveBtn.disabled = true; // 초기 상태는 disabled
-
-        if (type === 'add') {
-            dashboardModalTitle.textContent = '새 대시보드 추가';
-        } else if (type === 'edit' && dashboard) {
-            dashboardModalTitle.textContent = '대시보드 편집';
-            editingDashboardId = dashboard.id;
-            dashboardNameInput.value = dashboard.name;
-            dashboardDescriptionInput.value = dashboard.description || '';
-        }
-        openModal(dashboardModal);
-        setupFormValidation(dashboardForm, [dashboardModalSaveBtn]);
-    };
-
-    const closeDashboardModal = () => {
-        closeModal(dashboardModal);
-        editingDashboardId = null;
-        dashboardNameInput.classList.remove('invalid');
-        dashboardForm.querySelectorAll('.error-message').forEach(el => {
+    // closeDashboardModal -> closeListModal
+    const closeListModal = () => {
+        closeModal(listModal);
+        editingListId = null;
+        listNameInput.classList.remove('invalid');
+        listForm.querySelectorAll('.error-message').forEach(el => {
             el.classList.add('hidden');
             el.style.height = '0';
         });
@@ -577,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Form Validation Functions (수정된 부분) ---
     const validateForm = (formElement) => {
         let isValid = true;
-        const inputs = formElement.querySelectorAll('input[required], textarea[required]');
+        const inputs = formElement.querySelectorAll('input[required]:not([type="radio"]), textarea[required]'); // 라디오 버튼은 required에서 제외
 
         inputs.forEach(input => {
             const errorMsg = input.nextElementSibling;
@@ -586,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (input.value.trim() === '') {
                 input.classList.add('invalid');
                 if (isErrorMessageElement) {
-                    errorMsg.textContent = `${input.previousElementSibling.textContent}을(를) 입력해주세요.`;
+                    errorMsg.textContent = `${input.previousElementSibling.textContent.replace(' (선택)', '').replace(' (자동 추출 예정)', '')}을(를) 입력해주세요.`; // 레이블 텍스트에서 ' (선택)' 제거
                     errorMsg.classList.add('visible');
                     errorMsg.style.height = `${errorMsg.scrollHeight}px`;
                 }
@@ -618,18 +727,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+
+        // Item Modal specific validation (conditional required fields)
+        if (formElement.id === 'item-form') {
+            const selectedType = document.querySelector('input[name="item-type"]:checked').value;
+
+            if (selectedType === 'todo') {
+                if (itemTextInput.value.trim() === '') {
+                    itemTextInput.classList.add('invalid');
+                    if (itemTextInput.nextElementSibling && itemTextInput.nextElementSibling.classList.contains('error-message')) {
+                        itemTextInput.nextElementSibling.textContent = '할 일 내용을 입력해주세요.';
+                        itemTextInput.nextElementSibling.classList.add('visible');
+                        itemTextInput.nextElementSibling.style.height = `${itemTextInput.nextElementSibling.scrollHeight}px`;
+                    }
+                    isValid = false;
+                }
+            } else if (selectedType === 'link') {
+                if (itemUrlInput.value.trim() === '') {
+                    itemUrlInput.classList.add('invalid');
+                    if (itemUrlInput.nextElementSibling && itemUrlInput.nextElementSibling.classList.contains('error-message')) {
+                        itemUrlInput.nextElementSibling.textContent = '링크 URL을 입력해주세요.';
+                        itemUrlInput.nextElementSibling.classList.add('visible');
+                        itemUrlInput.nextElementSibling.style.height = `${itemUrlInput.nextElementSibling.scrollHeight}px`;
+                    }
+                    isValid = false;
+                }
+                if (itemLinkTitleInput.value.trim() === '') {
+                    itemLinkTitleInput.classList.add('invalid');
+                    if (itemLinkTitleInput.nextElementSibling && itemLinkTitleInput.nextElementSibling.classList.contains('error-message')) {
+                        itemLinkTitleInput.nextElementSibling.textContent = '링크 제목을 입력해주세요.';
+                        itemLinkTitleInput.nextElementSibling.classList.add('visible');
+                        itemLinkTitleInput.nextElementSibling.style.height = `${itemLinkTitleInput.nextElementSibling.scrollHeight}px`;
+                    }
+                    isValid = false;
+                }
+            }
+        }
         return isValid;
     };
 
     const setupFormValidation = (formElement, saveButtons) => {
-        const inputs = formElement.querySelectorAll('input[required], textarea[required]');
+        const inputs = formElement.querySelectorAll('input:not([type="radio"]), textarea'); // 모든 입력 필드를 포함
 
         const checkFormValidity = () => {
             const isValid = validateForm(formElement);
             saveButtons.forEach(button => {
-                // 버튼이 로딩 상태가 아닌 경우에만 폼 유효성에 따라 disabled 상태를 변경합니다.
-                // 로딩 상태인 경우, setLoadingState에 의해 disabled 상태가 관리되므로 건드리지 않습니다.
-                if (button.dataset.isloading !== 'true') { // <--- 이 조건문이 수정되었습니다.
+                if (button.dataset.isloading !== 'true') {
                      button.disabled = !isValid;
                 }
             });
@@ -639,6 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('input', checkFormValidity);
             input.addEventListener('blur', checkFormValidity);
         });
+
+        // Item type radios also need to trigger validation check
+        if (formElement.id === 'item-form') {
+            document.querySelectorAll('input[name="item-type"]').forEach(radio => {
+                radio.addEventListener('change', checkFormValidity);
+            });
+        }
 
         checkFormValidity(); // 초기 유효성 검사 실행
     };
@@ -670,7 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             generalLoginForm.style.height = `${generalLoginForm.scrollHeight}px`;
             generalLoginBtn.setAttribute('aria-expanded', 'false');
-            
+
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     generalLoginForm.style.height = '0';
@@ -853,21 +1003,21 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
-        openDashboardModal('add');
+        openListModal('add'); // openDashboardModal -> openListModal
     });
     emptyAddDashboardBtn.addEventListener('click', () => {
         if (!currentUserUid || !isEmailVerified) {
             showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
-        openDashboardModal('add');
+        openListModal('add'); // openDashboardModal -> openListModal
     });
 
-    // Dashboard Form Submission (Firestore) (이메일 인증 확인 및 로딩 상태 추가)
-    dashboardForm.addEventListener('submit', async (e) => {
+    // Dashboard Form Submission (Firestore) // listForm.addEventListener
+    listForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!validateForm(dashboardForm)) {
-            showToast('대시보드 정보를 올바르게 입력해주세요.', 'error');
+        if (!validateForm(listForm)) {
+            showToast('투두리스트 정보를 올바르게 입력해주세요.', 'error'); // 텍스트 변경
             return;
         }
         if (!currentUserUid || !isEmailVerified) {
@@ -875,56 +1025,105 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const name = dashboardNameInput.value.trim();
-        const description = dashboardDescriptionInput.value.trim();
+        const name = listNameInput.value.trim(); // dashboardNameInput -> listNameInput
+        const description = listDescriptionInput.value.trim(); // dashboardDescriptionInput -> listDescriptionInput
 
-        setLoadingState(dashboardModalSaveBtn, true, "저장 중...");
+        setLoadingState(listModalSaveBtn, true, "저장 중..."); // dashboardModalSaveBtn -> listModalSaveBtn
 
         try {
-            if (editingDashboardId) {
-                await db.collection('users').doc(currentUserUid).collection('dashboards').doc(editingDashboardId).update({
+            if (editingListId) { // editingDashboardId -> editingListId
+                await db.collection('users').doc(currentUserUid).collection('dashboards').doc(editingListId).update({
                     name: name,
                     description: description
                 });
-                showToast('대시보드가 수정되었습니다.');
+                showToast('투두리스트가 수정되었습니다.'); // 텍스트 변경
             } else {
                 const newDashboardRef = await db.collection('users').doc(currentUserUid).collection('dashboards').add({
                     name: name,
                     description: description,
-                    links: []
+                    items: [] // links -> items
                 });
                 dashboards.push({
                     id: newDashboardRef.id,
                     name: name,
                     description: description,
-                    links: []
+                    items: [] // links -> items
                 });
                 currentDashboardIndex = dashboards.length - 1;
-                showToast('새 대시보드가 추가되었습니다.');
+                showToast('새 투두리스트가 추가되었습니다.'); // 텍스트 변경
             }
             await loadData();
-            closeDashboardModal();
+            closeListModal(); // closeDashboardModal -> closeListModal
         } catch (error) {
-            showToast('대시보드 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error');
-            console.error("Dashboard save error:", error);
+            showToast('투두리스트 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error'); // 텍스트 변경
+            console.error("List save error:", error);
         } finally {
-            setLoadingState(dashboardModalSaveBtn, false, "저장");
+            setLoadingState(listModalSaveBtn, false, "저장");
         }
     });
 
-    // Dashboard Modal Cancel & Close on outside click (기존과 동일)
-    dashboardModalCancelBtn.addEventListener('click', closeDashboardModal);
-    dashboardModal.addEventListener('click', (e) => {
-        if (e.target === dashboardModal) {
-            closeDashboardModal();
+    // Dashboard Modal Cancel & Close on outside click
+    listModalCancelBtn.addEventListener('click', closeListModal); // dashboardModalCancelBtn -> listModalCancelBtn
+    listModal.addEventListener('click', (e) => { // dashboardModal -> listModal
+        if (e.target === listModal) {
+            closeListModal();
         }
     });
 
-    // Link Form Submission (Firestore) (이메일 인증 확인 및 로딩 상태 추가)
-    linkForm.addEventListener('submit', async (e) => {
+    // Item Type radio button change listener
+    document.querySelectorAll('input[name="item-type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            toggleItemModalFields(e.target.value);
+        });
+    });
+
+    // Simulate URL info extraction with loading state for item-url-input
+    itemUrlInput.addEventListener('blur', () => {
+        const url = itemUrlInput.value.trim();
+        const selectedType = document.querySelector('input[name="item-type"]:checked').value;
+
+        // Only attempt to extract if it's a link type or a todo with a URL,
+        // and if URL is valid and title/favicon not yet populated.
+        if (url && !itemUrlInput.classList.contains('invalid')) {
+            let shouldPopulate = false;
+            if (selectedType === 'todo' && !itemLinkTitleInput.value) { // Todo with optional link
+                shouldPopulate = true;
+            } else if (selectedType === 'link' && !itemLinkTitleInput.value) { // Pure link
+                shouldPopulate = true;
+            }
+
+            if (shouldPopulate) {
+                faviconLoadingSpinner.classList.remove('hidden');
+                setTimeout(() => {
+                    try {
+                        const parsedUrl = new URL(url);
+                        // For todo type, populate linkTitle. For link type, populate itemLinkTitleInput
+                        if (selectedType === 'todo') {
+                            itemLinkTitleInput.value = parsedUrl.hostname;
+                        } else { // type === 'link'
+                            itemLinkTitleInput.value = parsedUrl.hostname;
+                        }
+                        // Favicon logic for both types if URL is present
+                        // This favicon URL will be saved with the item data
+                        itemUrlInput.dataset.favicon = `${parsedUrl.origin}/favicon.ico`;
+
+                        showToast('URL 정보를 임시로 채웠습니다.', 'info');
+                    } catch (e) {
+                        // Invalid URL, validation message already shown.
+                    } finally {
+                        faviconLoadingSpinner.classList.add('hidden');
+                        setupFormValidation(itemForm, [itemModalSaveBtn]);
+                    }
+                }, 800);
+            }
+        }
+    });
+
+    // Item Form Submission (Firestore)
+    itemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!validateForm(linkForm)) {
-            showToast('링크 정보를 올바르게 입력해주세요.', 'error');
+        if (!validateForm(itemForm)) {
+            showToast('항목 정보를 올바르게 입력해주세요.', 'error');
             return;
         }
         if (!currentUserUid || !isEmailVerified) {
@@ -932,91 +1131,90 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const url = linkUrlInput.value.trim();
-        const title = linkTitleInput.value.trim();
-        const favicon = linkFaviconInput.value.trim();
-
-        const currentDashboard = dashboards[currentDashboardIndex];
+        const selectedType = document.querySelector('input[name="item-type"]:checked').value;
+        const currentDashboard = dashboards[currentDashboardIndex]; // items -> items
         if (!currentDashboard) {
-            showToast('현재 대시보드를 찾을 수 없습니다. 대시보드를 먼저 추가해주세요.', 'error');
+            showToast('현재 투두리스트를 찾을 수 없습니다. 투두리스트를 먼저 추가해주세요.', 'error');
             return;
         }
 
-        setLoadingState(linkModalSaveBtn, true, "저장 중...");
+        setLoadingState(itemModalSaveBtn, true, "저장 중...");
 
         try {
-            if (editingLinkId) {
-                currentDashboard.links = currentDashboard.links.map(link =>
-                    link.id === editingLinkId
-                        ? { ...link, url, title: title || new URL(url).hostname, icon: favicon }
-                        : link
-                );
-                showToast('링크가 수정되었습니다.');
-            } else {
-                const newLink = {
-                    id: generateUniqueId(),
+            let newItem;
+            if (selectedType === 'todo') {
+                const text = itemTextInput.value.trim();
+                const completed = itemCompletedCheckbox.checked;
+                const url = itemUrlInput.value.trim();
+                const linkTitle = itemLinkTitleInput.value.trim();
+                const favicon = url ? itemUrlInput.dataset.favicon || `${new URL(url).origin}/favicon.ico` : '';
+
+                newItem = {
+                    id: editingItemId || generateUniqueId(),
+                    type: 'todo',
+                    text: text,
+                    completed: completed,
                     url: url,
-                    title: title || new URL(url).hostname,
-                    icon: favicon
+                    linkTitle: linkTitle,
+                    favicon: favicon
                 };
-                currentDashboard.links.push(newLink);
-                showToast('새 링크가 추가되었습니다.');
+            } else { // type === 'link'
+                const title = itemLinkTitleInput.value.trim(); // linkTitleInput is used for link title
+                const url = itemUrlInput.value.trim();
+                const favicon = url ? itemUrlInput.dataset.favicon || `${new URL(url).origin}/favicon.ico` : '';
+
+                newItem = {
+                    id: editingItemId || generateUniqueId(),
+                    type: 'link',
+                    title: title,
+                    url: url,
+                    favicon: favicon
+                };
+            }
+
+            if (editingItemId) {
+                currentDashboard.items = currentDashboard.items.map(item => // link -> item
+                    item.id === editingItemId ? newItem : item
+                );
+                showToast('항목이 수정되었습니다.');
+            } else {
+                currentDashboard.items.push(newItem); // link -> item
+                showToast('새 항목이 추가되었습니다.');
             }
 
             await db.collection('users').doc(currentUserUid).collection('dashboards').doc(currentDashboard.id).update({
-                links: currentDashboard.links
+                items: currentDashboard.items // links -> items
             });
 
-            renderLinksForDashboard(currentDashboard.id, `links-list-${currentDashboard.id}`, searchInput.value);
-            closeLinkModal();
+            renderListItems(currentDashboard.id, `items-list-${currentDashboard.id}`, searchInput.value); // link -> item
+            closeItemModal(); // closeLinkModal -> closeItemModal
         } catch (error) {
-            showToast('링크 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error');
-            console.error("Link save error:", error);
+            showToast('항목 저장/수정 실패: ' + getFirebaseErrorMessage(error), 'error');
+            console.error("Item save error:", error);
         } finally {
-            setLoadingState(linkModalSaveBtn, false, "저장");
+            setLoadingState(itemModalSaveBtn, false, "저장");
         }
     });
 
-    // Link Modal Cancel & Close on outside click (기존과 동일)
-    linkModalCancelBtn.addEventListener('click', closeLinkModal);
-    linkModal.addEventListener('click', (e) => {
-        if (e.target === linkModal) {
-            closeLinkModal();
+    // Item Modal Cancel & Close on outside click
+    itemModalCancelBtn.addEventListener('click', closeItemModal); // linkModalCancelBtn -> itemModalCancelBtn
+    itemModal.addEventListener('click', (e) => { // linkModal -> itemModal
+        if (e.target === itemModal) {
+            closeItemModal();
         }
     });
 
-    // Simulate URL info extraction with loading state (기존과 동일)
-    linkUrlInput.addEventListener('blur', () => {
-        const url = linkUrlInput.value.trim();
-        if (url && !linkUrlInput.classList.contains('invalid') && !linkTitleInput.value && !linkFaviconInput.value) {
-            faviconLoadingSpinner.classList.remove('hidden');
-            setTimeout(() => {
-                try {
-                    const parsedUrl = new URL(url);
-                    linkTitleInput.value = parsedUrl.hostname;
-                    linkFaviconInput.value = `${parsedUrl.origin}/favicon.ico`;
-                    showToast('URL 정보를 임시로 채웠습니다.', 'info');
-                } catch (e) {
-                    // Invalid URL, already handled by validation.
-                } finally {
-                    faviconLoadingSpinner.classList.add('hidden');
-                    setupFormValidation(linkForm, [linkModalSaveBtn]);
-                }
-            }, 800);
-        }
-    });
-
-    // Global Add Link button (adds to current dashboard) (이메일 인증 확인 추가)
+    // Global Add Item button (adds to current dashboard)
     addLinkGlobalBtn.addEventListener('click', () => {
         if (!currentUserUid || !isEmailVerified) {
             showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
         if (dashboards.length === 0) {
-            showToast('링크를 추가하려면 먼저 대시보드를 만들어주세요.', 'error');
+            showToast('항목을 추가하려면 먼저 투두리스트를 만들어주세요.', 'error'); // 텍스트 변경
             return;
         }
-        openLinkModal('add');
+        openItemModal('add'); // openLinkModal -> openItemModal
     });
 
     // --- Delegated Event Listeners for Dynamic Elements ---
@@ -1028,25 +1226,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboardId = dashboardCard.dataset.dashboardId;
         const currentDashboard = dashboards.find(d => d.id === dashboardId);
         if (!currentDashboard) return;
-        
+
         if (!currentUserUid || !isEmailVerified) {
             showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
-        const editDashboardBtn = e.target.closest('.edit-dashboard-btn');
-        const deleteDashboardBtn = e.target.closest('.delete-dashboard-btn');
+        const editListBtn = e.target.closest('.edit-list-btn'); // edit-dashboard-btn -> edit-list-btn
+        const deleteListBtn = e.target.closest('.delete-list-btn'); // delete-dashboard-btn -> delete-list-btn
 
-        if (editDashboardBtn) {
+        if (editListBtn) {
             e.stopPropagation();
-            openDashboardModal('edit', currentDashboard);
-        } else if (deleteDashboardBtn) {
+            openListModal('edit', currentDashboard); // openDashboardModal -> openListModal
+        } else if (deleteListBtn) {
             e.stopPropagation();
-            if (confirm(`'${currentDashboard.name}' 대시보드를 정말 삭제하시겠습니까? (포함된 링크도 모두 삭제됩니다)`)) {
-                setLoadingState(deleteDashboardBtn, true, '', `<span class="material-icons">delete</span>`); // 아이콘 버튼 로딩
+            if (confirm(`'${currentDashboard.name}' 투두리스트를 정말 삭제하시겠습니까? (포함된 항목도 모두 삭제됩니다)`)) { // 텍스트 변경
+                setLoadingState(deleteListBtn, true, '', `<span class="material-icons">delete</span>`); // 아이콘 버튼 로딩
                 try {
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).delete();
-                    showToast('대시보드가 삭제되었습니다.');
+                    showToast('투두리스트가 삭제되었습니다.'); // 텍스트 변경
                     await loadData();
                     if (dashboards.length > 0) {
                         if (currentDashboardIndex >= dashboards.length) {
@@ -1056,66 +1254,94 @@ document.addEventListener('DOMContentLoaded', () => {
                         currentDashboardIndex = 0;
                     }
                 } catch (error) {
-                    showToast('대시보드 삭제 실패: ' + getFirebaseErrorMessage(error), 'error');
-                    console.error("Dashboard delete error:", error);
+                    showToast('투두리스트 삭제 실패: ' + getFirebaseErrorMessage(error), 'error'); // 텍스트 변경
+                    console.error("List delete error:", error);
                 } finally {
-                    setLoadingState(deleteDashboardBtn, false, '', `<span class="material-icons">delete</span>`);
+                    setLoadingState(deleteListBtn, false, '', `<span class="material-icons">delete</span>`);
                 }
             }
-        } else if (e.target.closest('.add-link-card-btn')) {
+        } else if (e.target.closest('.add-link-card-btn')) { // add-link-card-btn (class name not changed)
             e.stopPropagation();
             currentDashboardIndex = dashboards.findIndex(d => d.id === dashboardId);
             scrollToDashboard(currentDashboardIndex);
             updatePaginationDots();
-            openLinkModal('add');
+            openItemModal('add'); // openLinkModal -> openItemModal
         }
     });
 
     dashboardsContainer.addEventListener('click', async (e) => {
-        const linkItem = e.target.closest('.link-item');
-        if (!linkItem) return;
+        const listItem = e.target.closest('.list-item'); // linkItem -> listItem
+        if (!listItem) return;
 
-        const linkId = linkItem.dataset.linkId;
-        const dashboardId = linkItem.closest('.dashboard-card').dataset.dashboardId;
+        const itemId = listItem.dataset.itemId; // linkId -> itemId
+        const dashboardId = listItem.dataset.dashboardId; // Get from listItem data attribute
         const targetDashboard = dashboards.find(d => d.id === dashboardId);
-        const targetLink = targetDashboard?.links.find(link => link.id === linkId);
-        if (!targetLink) return;
+        const targetItem = targetDashboard?.items.find(item => item.id === itemId); // targetLink -> targetItem, links -> items
+        if (!targetItem) return;
 
         if (!currentUserUid || !isEmailVerified) {
             showToast('로그인 후 이메일 인증을 완료해야 합니다.', 'error');
             return;
         }
 
-        const editLinkBtn = e.target.closest('.edit-link-btn');
-        const deleteLinkBtn = e.target.closest('.delete-link-btn');
+        const editItemBtn = e.target.closest('.edit-item-btn'); // edit-link-btn -> edit-item-btn
+        const deleteItemBtn = e.target.closest('.delete-item-btn'); // delete-link-btn -> delete-item-btn
+        const itemCheckbox = e.target.closest('.item-checkbox'); // New: checkbox click
 
-        if (editLinkBtn) {
+        if (itemCheckbox) { // Handle checkbox click
+            e.stopPropagation(); // Prevent parent li click
+            targetItem.completed = itemCheckbox.checked; // Update item's completed status
+
+            setLoadingState(itemCheckbox, true); // Basic loading state for checkbox
+            try {
+                await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).update({
+                    items: targetDashboard.items
+                });
+                // Update UI without full re-render, by toggling class
+                listItem.classList.toggle('completed', targetItem.completed);
+                showToast(targetItem.completed ? '할 일을 완료했습니다!' : '할 일을 미완료로 변경했습니다.');
+            } catch (error) {
+                showToast('상태 변경 실패: ' + getFirebaseErrorMessage(error), 'error');
+                console.error("Toggle completed error:", error);
+                itemCheckbox.checked = !itemCheckbox.checked; // Revert checkbox state on error
+            } finally {
+                setLoadingState(itemCheckbox, false); // Turn off loading state
+            }
+
+        } else if (editItemBtn) { // Handle edit button click
             e.stopPropagation();
-            openLinkModal('edit', targetLink);
-        } else if (deleteLinkBtn) {
+            openItemModal('edit', targetItem); // openLinkModal -> openItemModal
+
+        } else if (deleteItemBtn) { // Handle delete button click
             e.stopPropagation();
-            if (confirm(`'${targetLink.title}' 링크를 정말 삭제하시겠습니까?`)) {
-                setLoadingState(deleteLinkBtn, true, '', `<span class="material-icons">delete</span>`);
+            if (confirm(`'${targetItem.type === 'todo' ? targetItem.text : targetItem.title}' 항목을 정말 삭제하시겠습니까?`)) { // 텍스트 변경
+                setLoadingState(deleteItemBtn, true, '', `<span class="material-icons">delete</span>`);
                 try {
-                    const linkIndexToRemove = targetDashboard.links.findIndex(link => link.id === linkId);
-                    if (linkIndexToRemove > -1) {
-                        targetDashboard.links.splice(linkIndexToRemove, 1);
+                    const itemIndexToRemove = targetDashboard.items.findIndex(item => item.id === itemId); // link -> item
+                    if (itemIndexToRemove > -1) {
+                        targetDashboard.items.splice(itemIndexToRemove, 1);
                     }
 
                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(dashboardId).update({
-                        links: targetDashboard.links
+                        items: targetDashboard.items // links -> items
                     });
-                    showToast('링크가 삭제되었습니다.');
-                    renderLinksForDashboard(dashboardId, linkItem.closest('.links-list').id, searchInput.value);
+                    showToast('항목이 삭제되었습니다.'); // 텍스트 변경
+                    renderListItems(dashboardId, listItem.closest('.links-list').id, searchInput.value); // link -> item
                 } catch (error) {
-                    showToast('링크 삭제 실패: ' + getFirebaseErrorMessage(error), 'error');
-                    console.error("Link delete error:", error);
+                    showToast('항목 삭제 실패: ' + getFirebaseErrorMessage(error), 'error'); // 텍스트 변경
+                    console.error("Item delete error:", error);
                 } finally {
-                    setLoadingState(deleteLinkBtn, false, '', `<span class="material-icons">delete</span>`);
+                    setLoadingState(deleteItemBtn, false, '', `<span class="material-icons">delete</span>`);
                 }
             }
-        } else {
-            window.open(targetLink.url, '_blank');
+        } else { // Handle click on the item itself (not checkbox or buttons)
+            // If it's a link item, or a todo item with a URL, open the URL
+            if (targetItem.type === 'link' || (targetItem.type === 'todo' && targetItem.url)) {
+                window.open(targetItem.url, '_blank');
+            } else {
+                // For pure todo items, clicking them can open the edit modal
+                openItemModal('edit', targetItem);
+            }
         }
     });
 
@@ -1138,12 +1364,12 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             const cardElements = Array.from(dashboardsContainer.children).filter(el => el.classList.contains('dashboard-card'));
-            
+
             if (cardElements.length === 0) return;
 
             let closestIndex = 0;
             let minDiff = Infinity;
-            
+
             cardElements.forEach((card, index) => {
                 const diff = Math.abs(card.offsetLeft - dashboardsContainer.scrollLeft);
                 if (diff < minDiff) {
@@ -1186,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ensure targetScrollLeft is within valid boundaries
             targetScrollLeft = Math.max(0, Math.min(targetScrollLeft, dashboardsContainer.scrollWidth - dashboardsContainer.clientWidth));
-            
+
             // Perform the smooth scroll
             dashboardsContainer.scrollTo({
                 left: targetScrollLeft,
@@ -1248,18 +1474,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SortableJS Initialization (Firestore 데이터 변경 반영 및 이메일 인증 확인 추가) ---
     let dashboardsSortable;
-    let linksSortables = {};
+    let linksSortables = {}; // linksSortables는 이제 itemSortables
 
     const initializeSortable = () => {
         if (dashboardsSortable) {
             dashboardsSortable.destroy();
         }
-        for (const key in linksSortables) {
+        for (const key in linksSortables) { // linksSortables -> itemSortables
             if (linksSortables[key]) {
                 linksSortables[key].destroy();
             }
         }
-        linksSortables = {};
+        linksSortables = {}; // linksSortables -> itemSortables (reset)
 
         // Sortable for Dashboards (horizontal)
         if (currentUserUid && isEmailVerified) {
@@ -1280,70 +1506,70 @@ document.addEventListener('DOMContentLoaded', () => {
                         await saveData();
                         currentDashboardIndex = newIndex;
                         updatePaginationDots();
-                        showToast('대시보드 순서가 변경되었습니다.');
+                        showToast('투두리스트 순서가 변경되었습니다.'); // 텍스트 변경
                         renderDashboards(searchInput.value);
                     }
                 }
             });
 
-            // Sortable for Links within each Dashboard (vertical)
-            dashboards.forEach(dashboard => {
-                const linksListElement = document.getElementById(`links-list-${dashboard.id}`);
-                if (linksListElement) {
-                    linksSortables[dashboard.id] = Sortable.create(linksListElement, {
+            // Sortable for Items within each List (vertical)
+            dashboards.forEach(dashboard => { // dashboard는 이제 todoList
+                const itemsListElement = document.getElementById(`items-list-${dashboard.id}`); // linksListElement -> itemsListElement
+                if (itemsListElement) {
+                    linksSortables[dashboard.id] = Sortable.create(itemsListElement, { // linksSortables -> itemSortables
                         animation: 150,
-                        group: 'links',
+                        group: 'items', // group: 'links' -> 'items'
                         ghostClass: 'sortable-ghost',
                         chosenClass: 'sortable-chosen',
                         fallbackClass: 'sortable-fallback',
-                        handle: '.link-item',
+                        handle: '.list-item', // .link-item -> .list-item
                         forceFallback: true,
                         onEnd: async function (evt) {
                             const newIndex = evt.newIndex;
                             const fromDashboardId = evt.from.dataset.dashboardId;
                             const toDashboardId = evt.to.dataset.dashboardId;
-                            const draggedLinkId = evt.item.dataset.linkId;
+                            const draggedItemId = evt.item.dataset.itemId; // draggedLinkId -> draggedItemId
 
                             const fromDashboard = dashboards.find(d => d.id === fromDashboardId);
                             const toDashboard = dashboards.find(d => d.id === toDashboardId);
 
                             if (!fromDashboard || !toDashboard) {
-                                console.error('Source or target dashboard not found.');
+                                console.error('Source or target list not found.');
                                 return;
                             }
 
-                            const movedLinkIndex = fromDashboard.links.findIndex(link => link.id === draggedLinkId);
-                            if (movedLinkIndex === -1) {
-                                console.error('Dragged link not found in source dashboard links array.');
+                            const movedItemIndex = fromDashboard.items.findIndex(item => item.id === draggedItemId); // links -> items, link -> item
+                            if (movedItemIndex === -1) {
+                                console.error('Dragged item not found in source list items array.');
                                 return;
                             }
-                            const [movedLink] = fromDashboard.links.splice(movedLinkIndex, 1);
+                            const [movedItem] = fromDashboard.items.splice(movedItemIndex, 1); // link -> item
 
 
                             if (fromDashboardId === toDashboardId) {
-                                toDashboard.links.splice(newIndex, 0, movedLink);
-                                showToast('링크 순서가 변경되었습니다.');
+                                toDashboard.items.splice(newIndex, 0, movedItem); // links -> items
+                                showToast('항목 순서가 변경되었습니다.'); // 텍스트 변경
                             } else {
-                                toDashboard.links.splice(newIndex, 0, movedLink);
-                                showToast('링크가 다른 대시보드로 이동했습니다.');
+                                toDashboard.items.splice(newIndex, 0, movedItem); // links -> items
+                                showToast('항목이 다른 투두리스트로 이동했습니다.'); // 텍스트 변경
                             }
-                            
+
                             try {
                                 await db.collection('users').doc(currentUserUid).collection('dashboards').doc(fromDashboardId).update({
-                                    links: fromDashboard.links
+                                    items: fromDashboard.items // links -> items
                                 });
                                 if (fromDashboardId !== toDashboardId) {
                                     await db.collection('users').doc(currentUserUid).collection('dashboards').doc(toDashboardId).update({
-                                        links: toDashboard.links
+                                        items: toDashboard.items // links -> items
                                     });
                                 }
-                                renderLinksForDashboard(fromDashboardId, `links-list-${fromDashboardId}`, searchInput.value);
+                                renderListItems(fromDashboardId, `items-list-${fromDashboardId}`, searchInput.value); // link -> item
                                 if (fromDashboardId !== toDashboardId) {
-                                    renderLinksForDashboard(toDashboardId, `links-list-${toDashboardId}`, searchInput.value);
+                                    renderListItems(toDashboardId, `items-list-${toDashboardId}`, searchInput.value); // link -> item
                                 }
                             } catch (error) {
-                                showToast('링크 이동/순서 변경 실패: ' + getFirebaseErrorMessage(error), 'error');
-                                console.error("Sortable link update error:", error);
+                                showToast('항목 이동/순서 변경 실패: ' + getFirebaseErrorMessage(error), 'error'); // 텍스트 변경
+                                console.error("Sortable item update error:", error);
                             }
                         }
                     });
@@ -1385,10 +1611,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Global Keyboard Shortcuts (이메일 인증 확인 추가) ---
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (linkModal.classList.contains('active')) {
-                closeLinkModal();
-            } else if (dashboardModal.classList.contains('active')) {
-                closeDashboardModal();
+            if (itemModal.classList.contains('active')) { // linkModal -> itemModal
+                closeItemModal(); // closeLinkModal -> closeItemModal
+            } else if (listModal.classList.contains('active')) { // dashboardModal -> listModal
+                closeListModal(); // closeDashboardModal -> closeListModal
             } else if (settingsModal.classList.contains('active')) {
                 closeModal(settingsModal);
                 settingsBtn.setAttribute('aria-expanded', 'false');
@@ -1398,17 +1624,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 showTutorialStep(tutorialSteps.length);
             }
         }
-        // Cmd/Ctrl + L for Add Link
+        // Cmd/Ctrl + L for Add Item
         if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
             e.preventDefault();
-            if (currentUserUid && isEmailVerified && !linkModal.classList.contains('active')) {
+            if (currentUserUid && isEmailVerified && !itemModal.classList.contains('active')) { // linkModal -> itemModal
                 addLinkGlobalBtn.click();
             }
         }
-        // Cmd/Ctrl + D for Add Dashboard
+        // Cmd/Ctrl + D for Add List
         if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
             e.preventDefault();
-            if (currentUserUid && isEmailVerified && !dashboardModal.classList.contains('active')) {
+            if (currentUserUid && isEmailVerified && !listModal.classList.contains('active')) { // dashboardModal -> listModal
                 addDashboardGlobalBtn.click();
             }
         }
@@ -1420,7 +1646,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         // Arrow key navigation for dashboards on desktop/tablet (when not in modal)
-        if (currentUserUid && isEmailVerified && !linkModal.classList.contains('active') && !dashboardModal.classList.contains('active') && !settingsModal.classList.contains('active') && !tutorialModal.classList.contains('active')) {
+        if (currentUserUid && isEmailVerified && !itemModal.classList.contains('active') && !listModal.classList.contains('active') && !settingsModal.classList.contains('active') && !tutorialModal.classList.contains('active')) { // linkModal -> itemModal, dashboardModal -> listModal
             if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 if (currentDashboardIndex < dashboards.length - 1) {
