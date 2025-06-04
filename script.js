@@ -1157,6 +1157,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     });
 
+    // --- New: Desktop vertical scroll to horizontal navigation ---
+    dashboardsContainer.addEventListener('wheel', (e) => {
+        // Only apply on desktop (where dashboards are horizontal and there's no mobile pagination)
+        // Check if the primary mouse button is not pressed (to avoid interfering with drag-scrolling)
+        if (e.buttons === 0 && window.innerWidth > 600) { // Assuming 600px is the breakpoint for desktop layout
+            e.preventDefault(); // Prevent default vertical scroll
+            const scrollAmount = e.deltaY; // Get vertical scroll amount
+            const scrollSpeedMultiplier = 0.8; // Adjust this value for desired scroll speed
+            dashboardsContainer.scrollLeft += scrollAmount * scrollSpeedMultiplier;
+        }
+    }, { passive: false }); // `passive: false` is required to allow `e.preventDefault()`
+
+
     // Ensure scroll position is correct on resize (이메일 인증 여부 확인 추가)
     let resizeTimeout;
     window.addEventListener('resize', () => {
