@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DashLink</title>
+    <title>LINO</title> <!-- LINO로 변경 -->
     <!-- 스타일시트 연결 -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -15,10 +15,10 @@
             <div class="login-card">
                 <!-- 로고 이미지 추가 및 텍스트를 span으로 감쌈 -->
                 <h1 class="logo">
-                    <img src="logo.png" alt="DashLink 로고" class="logo-image">
-                    <span>DashLink</span>
+                    <img src="logo.png" alt="LINO 로고" class="logo-image"> <!-- alt 텍스트 변경 -->
+                    <span>LINO</span> <!-- DashLink에서 LINO로 변경 -->
                 </h1>
-                <p class="tagline">나만의 웹 링크를 어디서든, 한 눈에</p>
+                <p class="tagline">나만의 투두리스트를 어디서든, 한 눈에</p> <!-- 태그라인 변경 -->
                 <div class="social-login-buttons">
                     <!-- 버튼 텍스트 변경: "이메일로 로그인/가입" -->
                     <button id="general-login-btn" class="btn btn-social btn-general" aria-expanded="false" aria-controls="general-login-form">
@@ -48,7 +48,7 @@
                     </div>
                     <!-- Google 로그인 버튼 활성화 -->
                     <button class="btn btn-social btn-google" id="google-login-btn">
-                        <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google" />
+                        <img src="<https://img.icons8.com/color/48/000000/google-logo.png>" alt="Google" />
                         Google로 시작하기
                     </button>
                 </div>
@@ -59,7 +59,7 @@
         <!-- Main Dashboard Screen -->
         <div id="main-dashboard-screen" class="screen">
             <header class="header">
-                <h1 id="dashboard-main-title" class="main-title">DashLink</h1>
+                <h1 id="dashboard-main-title" class="main-title">LINO</h1> <!-- LINO로 변경 -->
                 <div class="header-actions">
                     <div class="icon-buttons-group">
                         <button id="search-btn" class="btn btn-icon-round" title="검색" aria-label="검색" aria-expanded="false" aria-controls="search-bar-container">
@@ -68,10 +68,10 @@
                         <button id="settings-btn" class="btn btn-icon-round" title="설정" aria-label="설정" aria-expanded="false" aria-controls="settings-modal">
                             <span class="material-icons">settings</span>
                         </button>
-                        <button id="add-link-global-btn" class="btn btn-icon-round" title="새 링크 추가" aria-label="새 링크 추가">
-                            <span class="material-icons">add_link</span>
+                        <button id="add-link-global-btn" class="btn btn-icon-round" title="새 항목 추가" aria-label="새 항목 추가"> <!-- 텍스트 변경 -->
+                            <span class="material-icons">add</span> <!-- 아이콘 변경 (link -> add) -->
                         </button>
-                        <button id="add-dashboard-global-btn" class="btn btn-icon-round" title="새 대시보드 추가" aria-label="새 대시보드 추가">
+                        <button id="add-dashboard-global-btn" class="btn btn-icon-round" title="새 투두리스트 추가" aria-label="새 투두리스트 추가"> <!-- 텍스트 변경 -->
                             <span class="material-icons">add_box</span>
                         </button>
                     </div>
@@ -83,16 +83,16 @@
             </header>
 
             <div id="search-bar-container" class="search-bar-container hidden" role="search">
-                <input type="text" id="search-input" placeholder="현재 대시보드 링크 검색..." aria-label="링크 검색 입력" />
+                <input type="text" id="search-input" placeholder="현재 투두리스트 항목 검색..." aria-label="항목 검색 입력" /> <!-- 텍스트 변경 -->
                 <button id="search-close-btn" class="btn btn-text" aria-label="검색 닫기"><span class="material-icons">close</span></button>
             </div>
 
-            <div id="dashboards-container" class="dashboards-container" role="region" aria-label="대시보드 목록">
+            <div id="dashboards-container" class="dashboards-container" role="region" aria-label="투두리스트 목록"> <!-- aria-label 변경 -->
                 <!-- Dashboards (cards) will be rendered here by JS -->
                 <div class="empty-state" id="empty-dashboards-state">
                     <span class="material-icons">dashboard</span>
-                    <p>로그인 후 첫 대시보드를 추가해보세요!<br>이메일 인증이 필요할 수 있습니다.</p>
-                    <button class="btn btn-primary" id="empty-add-dashboard-btn">새 대시보드 추가</button>
+                    <p>로그인 후 첫 투두리스트를 추가해보세요!<br>이메일 인증이 필요할 수 있습니다.</p> <!-- 텍스트 변경 -->
+                    <button class="btn btn-primary" id="empty-add-dashboard-btn">새 투두리스트 추가</button> <!-- 텍스트 변경 -->
                 </div>
             </div>
 
@@ -102,50 +102,77 @@
         </div>
 
         <!-- Modals -->
-        <div id="link-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+        <!-- Link Modal -> Item Modal로 변경 -->
+        <div id="item-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="item-modal-title">
             <div class="modal-content">
-                <h2 id="link-modal-title">새 링크 추가</h2>
-                <form id="link-form">
-                    <div class="form-group">
-                        <label for="link-url">URL</label>
-                        <input type="url" id="link-url" placeholder="https://www.example.com" required>
+                <h2 id="item-modal-title">새 항목 추가</h2> <!-- 타이틀 변경 -->
+                <form id="item-form"> <!-- form id 변경 -->
+                    <!-- 항목 유형 선택 (라디오 버튼) -->
+                    <div class="form-group item-type-selection">
+                        <label>항목 유형</label>
+                        <div class="radio-group" role="radiogroup" aria-label="항목 유형 선택">
+                            <input type="radio" id="item-type-todo" name="item-type" value="todo" checked>
+                            <label for="item-type-todo">할 일</label>
+                            <input type="radio" id="item-type-link" name="item-type" value="link">
+                            <label for="item-type-link">웹 링크</label>
+                        </div>
+                    </div>
+
+                    <!-- 할 일 내용 (기존 link-title) -->
+                    <div class="form-group" id="item-text-group">
+                        <label for="item-text-input">할 일 내용</label> <!-- 레이블 변경 -->
+                        <input type="text" id="item-text-input" placeholder="예: 주간 보고서 작성" required> <!-- placeholder 변경 -->
+                        <p class="error-message hidden" aria-live="polite">내용을 입력해주세요.</p>
+                    </div>
+
+                    <!-- 완료 체크박스 (새로 추가) -->
+                    <div class="form-group" id="item-completed-group">
+                        <label for="item-completed-checkbox">완료</label>
+                        <input type="checkbox" id="item-completed-checkbox">
+                    </div>
+
+                    <!-- 링크 URL (기존 link-url) -->
+                    <div class="form-group hidden" id="item-url-group"> <!-- 초기 hidden -->
+                        <label for="item-url-input">링크 URL (선택)</label> <!-- 레이블 변경 -->
+                        <input type="url" id="item-url-input" placeholder="<https://www.example.com>"> <!-- id 변경 -->
                         <p class="error-message hidden" aria-live="polite">유효한 URL을 입력해주세요.</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="link-title">제목</label>
-                        <input type="text" id="link-title" placeholder="링크 제목 (자동 추출 예정)" required>
                         <span id="favicon-loading-spinner" class="loading-spinner hidden" role="status" aria-label="정보 로딩 중"></span>
-                        <p class="error-message hidden" aria-live="polite">제목을 입력해주세요.</p>
                     </div>
-                    <div class="form-group">
-                        <label for="link-favicon">Favicon URL (선택)</label>
-                        <input type="url" id="link-favicon" placeholder="https://www.example.com/favicon.ico">
-                        <small>실제 서비스에서는 URL 입력 시 자동 추출됩니다.</small>
+
+                    <!-- 링크 제목 (새로 추가, 기존 link-title과 별도) -->
+                    <div class="form-group hidden" id="item-link-title-group"> <!-- 초기 hidden -->
+                        <label for="item-link-title-input">링크 제목 (자동 추출 예정)</label> <!-- 레이블 변경 -->
+                        <input type="text" id="item-link-title-input" placeholder="링크 제목">
+                        <p class="error-message hidden" aria-live="polite">링크 제목을 입력해주세요.</p>
                     </div>
+
+                    <!-- Favicon URL 필드는 제거됨. 자동 추출만 사용 -->
+
                     <div class="modal-actions">
-                        <button type="button" id="link-modal-cancel-btn" class="btn btn-text">취소</button>
-                        <button type="submit" id="link-modal-save-btn" class="btn btn-primary" disabled>저장</button>
+                        <button type="button" id="item-modal-cancel-btn" class="btn btn-text">취소</button> <!-- id 변경 -->
+                        <button type="submit" id="item-modal-save-btn" class="btn btn-primary" disabled>저장</button> <!-- id 변경 -->
                     </div>
                 </form>
             </div>
         </div>
 
-        <div id="dashboard-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-modal-title">
+        <!-- Dashboard Modal -> List Modal로 변경 -->
+        <div id="list-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
             <div class="modal-content">
-                <h2 id="dashboard-modal-title">새 대시보드 추가</h2>
-                <form id="dashboard-form">
+                <h2 id="list-modal-title">새 투두리스트 추가</h2> <!-- 타이틀 변경 -->
+                <form id="list-form"> <!-- form id 변경 -->
                     <div class="form-group">
-                        <label for="dashboard-name">대시보드 이름</label>
-                        <input type="text" id="dashboard-name" placeholder="예: 업무용 링크 모음" required>
-                        <p class="error-message hidden" aria-live="polite">대시보드 이름을 입력해주세요.</p>
+                        <label for="list-name-input">투두리스트 이름</label> <!-- 레이블 변경 -->
+                        <input type="text" id="list-name-input" placeholder="예: 업무용 할 일" required> <!-- id, placeholder 변경 -->
+                        <p class="error-message hidden" aria-live="polite">투두리스트 이름을 입력해주세요.</p>
                     </div>
                     <div class="form-group">
-                        <label for="dashboard-description">설명 (선택)</label>
-                        <textarea id="dashboard-description" rows="3" placeholder="이 대시보드에 대한 짧은 설명을 작성해주세요."></textarea>
+                        <label for="list-description-input">설명 (선택)</label> <!-- 레이블 변경 -->
+                        <textarea id="list-description-input" rows="3" placeholder="이 투두리스트에 대한 짧은 설명을 작성해주세요."></textarea> <!-- id, placeholder 변경 -->
                     </div>
                     <div class="modal-actions">
-                        <button type="button" id="dashboard-modal-cancel-btn" class="btn btn-text">취소</button>
-                        <button type="submit" id="dashboard-modal-save-btn" class="btn btn-primary" disabled>저장</button>
+                        <button type="button" id="list-modal-cancel-btn" class="btn btn-text">취소</button> <!-- id 변경 -->
+                        <button type="submit" id="list-modal-save-btn" class="btn btn-primary" disabled>저장</button> <!-- id 변경 -->
                     </div>
                 </form>
             </div>
@@ -178,7 +205,7 @@
         <!-- Onboarding Tutorial Modal -->
         <div id="tutorial-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
             <div class="modal-content">
-                <h2 id="tutorial-title">DashLink 사용 가이드</h2>
+                <h2 id="tutorial-title">LINO 사용 가이드</h2> <!-- 타이틀 변경 -->
                 <div id="tutorial-content">
                     <!-- Tutorial steps will be dynamically inserted here -->
                 </div>
@@ -186,7 +213,7 @@
                     <button id="tutorial-skip-btn" class="btn btn-text">건너뛰기</button>
                     <button id="tutorial-prev-btn" class="btn btn-primary hidden">이전</button>
                     <button id="tutorial-next-btn" class="btn btn-primary">다음</button>
-                    <button id="tutorial-start-btn" class="btn btn-primary hidden">DashLink 시작하기</button>
+                    <button id="tutorial-start-btn" class="btn btn-primary hidden">LINO 시작하기</button> <!-- 텍스트 변경 -->
                 </div>
             </div>
         </div>
@@ -196,12 +223,12 @@
     </div>
 
     <!-- Firebase SDK Scripts (Google CDN) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="<https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js>"></script>
+    <script src="<https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js>"></script>
+    <script src="<https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js>"></script>
 
     <!-- SortableJS 라이브러리 (드래그 앤 드롭 기능을 위해 필요) -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="<https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js>"></script>
     <!-- 주 애플리케이션 스크립트 -->
     <script src="script.js"></script>
 </body>
