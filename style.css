@@ -455,7 +455,7 @@ body.dark-mode .btn-icon-round:hover {
     flex-grow: 1;
     display: flex;
     overflow-x: scroll;
-    scroll-snap-type: x mandatory;
+    /* Removed scroll-snap-type for smoother desktop wheel scrolling */
     -webkit-overflow-scrolling: touch;
     height: calc(100% - 80px); /* Header height only, no pagination bottom */
     -ms-overflow-style: none;
@@ -480,7 +480,7 @@ body.dark-mode .btn-icon-round:hover {
     display: flex;
     flex-direction: column;
     padding: 24px;
-    scroll-snap-align: start;
+    /* Removed scroll-snap-align as scroll-snap-type is removed from parent */
     height: calc(100% - 24px); /* Account for padding */
     position: relative;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
@@ -1087,7 +1087,7 @@ body.dark-mode .btn-icon-round:hover {
         flex-wrap: nowrap;
         padding: 0;
         gap: 0;
-        scroll-snap-type: x mandatory;
+        scroll-snap-type: x mandatory; /* Re-enable snap for mobile swipe */
         height: calc(100% - 80px - 30px);
     }
     .dashboard-card {
@@ -1096,6 +1096,7 @@ body.dark-mode .btn-icon-round:hover {
         border-radius: 0;
         box-shadow: none;
         padding: 20px;
+        scroll-snap-align: start; /* Re-enable snap align for mobile swipe */
     }
     .dashboard-pagination {
         display: flex;
