@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginSubmitBtn = document.getElementById('login-submit-btn');
     const signupSubmitBtn = document.getElementById('signup-submit-btn');
     const googleLoginBtn = document.getElementById('google-login-btn');
-    const forgotPasswordBtn = document.getElementById('forgot-password-btn'); // 비밀번호 재설정 버튼 추가
+    const forgotPasswordBtn = document = document.getElementById('forgot-password-btn'); // 비밀번호 재설정 버튼 추가
 
     // Dashboard Screen Elements
     const logoutBtn = document.getElementById('logout-btn');
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToDashboard = (index, smooth = true) => {
         if (!dashboardsContainer.children[index]) {
             if (dashboards.length > 0) {
-                currentDashboardIndex = Math.max(0, Math.min(index, dashboards.length - 1));
+                currentDashboardIndex = Math.max(0, Math.min(currentDashboardIndex, dashboards.length - 1));
             } else {
                 currentDashboardIndex = 0;
             }
@@ -1135,11 +1135,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Swiper scroll event to update current dashboard index (기존과 동일)
     let scrollTimeout;
     dashboardsContainer.addEventListener('scroll', () => {
-        // 이 scroll 이벤트 리스너는 wheel 이벤트 리스너가 smooth 스크롤을 트리거한 후,
-        // 실제 스크롤 위치가 변경될 때마다 호출됩니다.
-        // 따라서 wheel 이벤트가 유발한 smooth 스크롤이 끝난 후 currentDashboardIndex를
-        // 정확히 업데이트하기 위해 setTimeout을 사용했던 부분을 제거하고
-        // 여기에서 자연스럽게 처리되도록 합니다.
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             const cardElements = Array.from(dashboardsContainer.children).filter(el => el.classList.contains('dashboard-card'));
@@ -1171,21 +1166,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.buttons === 0 && window.innerWidth > 600) {
             e.preventDefault(); // Prevent default vertical scroll
 
-            // Determine scroll direction: positive deltaY means scroll down (move right/next dashboard)
-            const scrollDirection = e.deltaY > 0 ? 1 : -1; // 1 for down (next), -1 for up (previous)
+            const firstCard = dashboardsContainer.querySelector('.dashboard-card');
+            if (!firstCard) return;
 
-            let newDashboardIndex = currentDashboardIndex + scrollDirection;
+            // Calculate the exact width of a single card including its right margin/gap
+            // The gap is 24px, and the card width is calc(100% / 3 - (24px * 2 / 3))
+            // This calculation gives the distance needed to scroll to see the start of the next card cleanly.
+            const cardWidthWithGap = firstCard.offsetWidth + 24; // Assuming 24px gap between cards
 
-            // Ensure the new index is within valid bounds
-            newDashboardIndex = Math.max(0, Math.min(newDashboardIndex, dashboards.length - 1));
+            let targetScrollLeft;
+            const scrollDirection = e.deltaY > 0 ? 1 : -1; // 1 for down (move right), -1 for up (move left)
 
-            // Only perform scroll if the target index is different from current
-            // This prevents re-scrolling if already at the first/last dashboard
-            if (newDashboardIndex !== currentDashboardIndex) {
-                currentDashboardIndex = newDashboardIndex; // Update the global current index
-                scrollToDashboard(currentDashboardIndex, true); // Smoothly scroll to the new dashboard
-                updatePaginationDots(); // Update pagination dots (though hidden on desktop by CSS)
+            // Determine the target scroll position based on current scroll and card width
+            if (scrollDirection > 0) { // Scroll down -> move right
+                targetScrollLeft = dashboardsContainer.scrollLeft + cardWidthWithGap;
+            } else { // Scroll up -> move left
+                targetScrollLeft = dashboardsContainer.scrollLeft - cardWidthWithGap;
             }
+
+            // Ensure targetScrollLeft is within valid boundaries
+            targetScrollLeft = Math.max(0, Math.min(targetScrollLeft, dashboardsContainer.scrollWidth - dashboardsContainer.clientWidth));
+            
+            // Perform the smooth scroll
+            dashboardsContainer.scrollTo({
+                left: targetScrollLeft,
+                behavior: 'smooth'
+            });
+
+            // No need to update currentDashboardIndex or pagination dots here immediately.
+            // The existing 'scroll' event listener will handle this once the smooth scroll settles.
         }
     }, { passive: false }); // `passive: false` is required to allow `e.preventDefault()`
 
