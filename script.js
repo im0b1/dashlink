@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const tutorialModal = document.getElementById('tutorial-modal');
     const tutorialContent = document.getElementById('tutorial-content');
     const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
-    const tutorialPrevBtn = document.getElementById('tutorial-prev-btn');
-    const tutorialNextBtn = document = document.getElementById('tutorial-next-btn');
+    const tutorialPrevBtn = document = document.getElementById('tutorial-prev-btn');
+    const tutorialNextBtn = document.getElementById('tutorial-next-btn');
     const tutorialStartBtn = document.getElementById('tutorial-start-btn');
 
     const toastContainer = document.getElementById('toast-container');
@@ -248,7 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dashboardPagination.style.display = 'none';
         } else {
             emptyDashboardsState.style.display = 'none';
-            dashboardPagination.style.display = 'flex';
+            // Note: The CSS handles hiding pagination dots on desktop (width > 600px).
+            // This line just ensures it's 'flex' for mobile where it's needed.
+            dashboardPagination.style.display = 'flex'; 
         }
 
         dashboards.forEach((dashboard, index) => {
@@ -357,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToDashboard = (index, smooth = true) => {
         if (!dashboardsContainer.children[index]) {
             if (dashboards.length > 0) {
-                currentDashboardIndex = Math.max(0, Math.min(currentDashboardIndex, dashboards.length - 1));
+                currentDashboardIndex = Math.max(0, Math.min(index, dashboards.length - 1));
             } else {
                 currentDashboardIndex = 0;
             }
@@ -1162,29 +1164,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     });
 
-    // --- New: Desktop vertical scroll to horizontal navigation ---
+    // --- Modified: Desktop vertical scroll to horizontal navigation ---
     dashboardsContainer.addEventListener('wheel', (e) => {
         // Only apply on desktop (where dashboards are horizontal and there's no mobile pagination)
         // Check if the primary mouse button is not pressed (to avoid interfering with drag-scrolling)
         if (e.buttons === 0 && window.innerWidth > 600) {
             e.preventDefault(); // Prevent default vertical scroll
 
-            const scrollAmount = e.deltaY;
-            const scrollStep = 200; // 스크롤 한 번에 이동할 픽셀 양을 조절합니다. (크게 하면 더 빨리 이동)
+            // Determine scroll direction: positive deltaY means scroll down (move right/next dashboard)
+            const scrollDirection = e.deltaY > 0 ? 1 : -1; // 1 for down (next), -1 for up (previous)
 
-            // Determine target index based on scroll direction
-            let targetIndex = currentDashboardIndex;
-            if (scrollAmount > 0) { // Scroll down -> move right (next dashboard)
-                targetIndex = Math.min(dashboards.length - 1, currentDashboardIndex + 1);
-            } else { // Scroll up -> move left (previous dashboard)
-                targetIndex = Math.max(0, currentDashboardIndex - 1);
-            }
+            let newDashboardIndex = currentDashboardIndex + scrollDirection;
 
-            // Only scroll if the target index is different
-            if (targetIndex !== currentDashboardIndex) {
-                currentDashboardIndex = targetIndex; // Update current index immediately
-                scrollToDashboard(currentDashboardIndex, true); // Use smooth scroll
-                updatePaginationDots(); // Update dots immediately
+            // Ensure the new index is within valid bounds
+            newDashboardIndex = Math.max(0, Math.min(newDashboardIndex, dashboards.length - 1));
+
+            // Only perform scroll if the target index is different from current
+            // This prevents re-scrolling if already at the first/last dashboard
+            if (newDashboardIndex !== currentDashboardIndex) {
+                currentDashboardIndex = newDashboardIndex; // Update the global current index
+                scrollToDashboard(currentDashboardIndex, true); // Smoothly scroll to the new dashboard
+                updatePaginationDots(); // Update pagination dots (though hidden on desktop by CSS)
             }
         }
     }, { passive: false }); // `passive: false` is required to allow `e.preventDefault()`
