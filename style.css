@@ -1,5 +1,5 @@
-@import url('<https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap>');
-@import url('<https://fonts.googleapis.com/icon?family=Material+Icons>');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 /* Default Light Theme */
 :root {
@@ -31,7 +31,7 @@ body.dark-mode {
 }
 body.dark-mode .social-login-buttons button,
 body.dark-mode .dashboard-card-actions .btn-action,
-body.dark-mode .list-item, /* link-item -> list-item */
+body.dark-mode .link-item,
 body.dark-mode .add-link-card-btn,
 body.dark-mode .modal-content,
 body.dark-mode .search-bar-container input,
@@ -45,7 +45,7 @@ body.dark-mode .theme-toggle { /* Added btn-icon-round for dark mode */
 }
 body.dark-mode .social-login-buttons button:hover,
 body.dark-mode .dashboard-card-actions .btn-action:hover,
-body.dark-mode .list-item:hover, /* link-item -> list-item */
+body.dark-mode .link-item:hover,
 body.dark-mode .add-link-card-btn:hover,
 body.dark-mode .btn-icon-round:hover,
 body.dark-mode .theme-toggle:hover:not(.active) { /* Added btn-icon-round for dark mode */
@@ -147,7 +147,7 @@ body {
     font-size: 36px;
     font-weight: 700;
     margin-bottom: 8px;
-
+    
     /* --- 로고 이미지 추가를 위한 수정/추가 --- */
     display: flex; /* flexbox 사용 */
     align-items: center; /* 세로 중앙 정렬 */
@@ -555,7 +555,7 @@ body.dark-mode .btn-icon-round:hover {
 }
 
 
-.links-list { /* Class name unchanged, but represents list of items */
+.links-list {
     flex-grow: 1;
     list-style: none;
     padding-top: 8px;
@@ -568,8 +568,7 @@ body.dark-mode .btn-icon-round:hover {
     display: none;
 }
 
-/* List Item styling */
-.list-item { /* New class for the item itself */
+.link-item {
     display: flex;
     align-items: center;
     padding: 12px 16px;
@@ -579,87 +578,23 @@ body.dark-mode .btn-icon-round:hover {
     cursor: grab; /* Indicates draggable area */
     transition: background-color 0.2s ease, transform 0.1s ease;
     position: relative;
-    text-decoration: none; /* For links */
+    text-decoration: none;
 }
-.list-item:active {
+.link-item:active {
     cursor: grabbing;
 }
 
 
-.list-item:hover {
+.link-item:hover {
     background-color: var(--border-color);
     transform: translateY(-2px);
     box-shadow: var(--shadow-light);
 }
-.list-item:active {
+.link-item:active {
     transform: translateY(0px);
 }
 
-/* Item Status (Checkbox + Separator) */
-.item-status {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    margin-right: 12px; /* Space between status and favicon/content */
-}
-
-.item-checkbox {
-    width: 20px;
-    height: 20px;
-    -webkit-appearance: none; /* Remove default checkbox style */
-    -moz-appearance: none;
-    appearance: none;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.item-checkbox:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.item-checkbox:checked::after {
-    content: '✔'; /* Checkmark icon */
-    font-size: 14px;
-    color: white;
-}
-/* Style for checkbox when parent .list-item.completed */
-.list-item.completed .item-checkbox {
-    border-color: var(--primary-color); /* Keep primary color even when completed */
-}
-body.dark-mode .item-checkbox {
-    background-color: var(--bg-color);
-}
-body.dark-mode .item-checkbox:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.status-separator {
-    width: 1px; /* Line width */
-    height: 20px; /* Line height */
-    background-image: linear-gradient(to bottom, var(--border-color) 33%, rgba(255,255,255,0) 0%);
-    background-position: left;
-    background-size: 1px 6px; /* Dot size and spacing */
-    background-repeat: repeat-y;
-    margin-left: 12px; /* Space between checkbox and separator */
-    transition: background-image 0.3s ease;
-}
-body.dark-mode .status-separator {
-    background-image: linear-gradient(to bottom, var(--border-color) 33%, rgba(0,0,0,0) 0%);
-}
-/* Hide separator if it's a pure link and no checkbox is present */
-.list-item[data-item-type="link"] .item-status {
-    display: none; /* Hide status div entirely for pure links */
-}
-
-
-.item-favicon { /* Renamed from link-item-favicon */
+.link-item-favicon {
     width: 24px;
     height: 24px;
     border-radius: 4px;
@@ -673,23 +608,18 @@ body.dark-mode .status-separator {
     transition: background-color 0.3s ease;
 }
 
-.item-favicon img {
+.link-item-favicon img {
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
-.item-favicon .material-icons {
+.link-item-favicon .material-icons {
     font-size: 18px;
     color: var(--text-secondary);
     transition: color 0.3s ease;
 }
-/* Hide favicon if not needed (e.g., pure todo without link) */
-.item-favicon.hidden {
-    display: none;
-}
 
-
-.item-content { /* Renamed from link-item-title */
+.link-item-title {
     font-size: 15px;
     font-weight: 500;
     color: var(--text-primary);
@@ -700,15 +630,8 @@ body.dark-mode .status-separator {
     margin-right: 10px; /* Space for actions */
     transition: color 0.3s ease;
 }
-/* Style for completed todo items */
-.list-item.completed .item-content {
-    text-decoration: line-through;
-    color: var(--text-secondary);
-    opacity: 0.7;
-}
 
-
-.item-actions { /* Renamed from link-item-actions */
+.link-item-actions {
     display: flex;
     gap: 4px;
     opacity: 0;
@@ -719,11 +642,11 @@ body.dark-mode .status-separator {
     padding-left: 8px;
 }
 
-.list-item:hover .item-actions {
+.link-item:hover .link-item-actions {
     opacity: 1;
 }
 
-.item-actions .btn-action {
+.link-item-actions .btn-action {
     background: none;
     border: none;
     border-radius: 50%;
@@ -736,16 +659,16 @@ body.dark-mode .status-separator {
     transition: background-color 0.2s ease;
 }
 
-.item-actions .btn-action .material-icons {
+.link-item-actions .btn-action .material-icons {
     font-size: 16px;
     color: var(--text-secondary);
     transition: color 0.3s ease;
 }
-.item-actions .btn-action:hover {
+.link-item-actions .btn-action:hover {
     background-color: var(--border-color);
 }
 
-.add-link-card-btn { /* Class name unchanged, but represents add item button */
+.add-link-card-btn {
     width: 100%;
     margin-top: 16px;
     padding: 10px;
@@ -908,10 +831,7 @@ body.dark-mode .status-separator {
     transition: color 0.3s ease;
 }
 
-.form-group input[type="text"],
-.form-group input[type="url"],
-.form-group input[type="email"],
-.form-group input[type="password"],
+.form-group input,
 .form-group textarea {
     width: 100%;
     padding: 12px;
@@ -924,10 +844,7 @@ body.dark-mode .status-separator {
     min-height: 40px;
 }
 
-.form-group input[type="text"]:focus,
-.form-group input[type="url"]:focus,
-.form-group input[type="email"]:focus,
-.form-group input[type="password"]:focus,
+.form-group input:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -937,79 +854,6 @@ body.dark-mode .status-separator {
 .form-group textarea.invalid {
     border-color: var(--error-color);
 }
-
-/* Radio button group for item type selection */
-.form-group.item-type-selection .radio-group {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-}
-.form-group.item-type-selection input[type="radio"] {
-    display: none; /* Hide actual radio button */
-}
-.form-group.item-type-selection input[type="radio"] + label {
-    padding: 8px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-button);
-    cursor: pointer;
-    background-color: var(--bg-light);
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    font-weight: 500;
-}
-.form-group.item-type-selection input[type="radio"]:checked + label {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-}
-.form-group.item-type-selection input[type="radio"] + label:hover {
-    background-color: var(--border-color);
-}
-body.dark-mode .form-group.item-type-selection input[type="radio"] + label {
-    background-color: var(--bg-color);
-}
-body.dark-mode .form-group.item-type-selection input[type="radio"]:checked + label {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-body.dark-mode .form-group.item-type-selection input[type="radio"] + label:hover {
-    background-color: var(--bg-light);
-}
-
-
-/* Checkbox for item completion in modal */
-#item-completed-checkbox {
-    width: 24px;
-    height: 24px;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    vertical-align: middle;
-    margin-left: 8px;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    flex-shrink: 0;
-}
-#item-completed-checkbox:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-#item-completed-checkbox:checked::after {
-    content: '✔';
-    font-size: 16px;
-    color: white;
-    display: block;
-    text-align: center;
-    line-height: 22px;
-}
-body.dark-mode #item-completed-checkbox {
-    background-color: var(--bg-light);
-}
-body.dark-mode #item-completed-checkbox:checked {
-    background-color: var(--primary-color);
-}
-
 
 .form-group small {
     font-size: 12px;
@@ -1030,10 +874,6 @@ body.dark-mode #item-completed-checkbox:checked {
 .form-group .error-message.visible {
     height: auto;
     opacity: 1;
-}
-
-.form-group.hidden {
-    display: none;
 }
 
 
@@ -1223,10 +1063,10 @@ body.dark-mode #item-completed-checkbox:checked {
     .dashboard-card-description {
         font-size: 13px;
     }
-    .list-item .item-content { /* link-item-title -> list-item .item-content */
+    .link-item-title {
         font-size: 14px;
     }
-    .item-favicon { /* link-item-favicon -> item-favicon */
+    .link-item-favicon {
         width: 20px;
         height: 20px;
         margin-right: 10px;
