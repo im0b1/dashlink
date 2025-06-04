@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToDashboard = (index, smooth = true) => {
         if (!dashboardsContainer.children[index]) {
             if (dashboards.length > 0) {
-                currentDashboardIndex = Math.max(0, Math.min(index, dashboards.length - 1));
+                currentDashboardIndex = Math.max(0, Math.min(currentDashboardIndex, dashboards.length - 1));
             } else {
                 currentDashboardIndex = 0;
             }
@@ -1133,6 +1133,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Swiper scroll event to update current dashboard index (기존과 동일)
     let scrollTimeout;
     dashboardsContainer.addEventListener('scroll', () => {
+        // 이 scroll 이벤트 리스너는 wheel 이벤트 리스너가 smooth 스크롤을 트리거한 후,
+        // 실제 스크롤 위치가 변경될 때마다 호출됩니다.
+        // 따라서 wheel 이벤트가 유발한 smooth 스크롤이 끝난 후 currentDashboardIndex를
+        // 정확히 업데이트하기 위해 setTimeout을 사용했던 부분을 제거하고
+        // 여기에서 자연스럽게 처리되도록 합니다.
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             const cardElements = Array.from(dashboardsContainer.children).filter(el => el.classList.contains('dashboard-card'));
@@ -1161,11 +1166,26 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboardsContainer.addEventListener('wheel', (e) => {
         // Only apply on desktop (where dashboards are horizontal and there's no mobile pagination)
         // Check if the primary mouse button is not pressed (to avoid interfering with drag-scrolling)
-        if (e.buttons === 0 && window.innerWidth > 600) { // Assuming 600px is the breakpoint for desktop layout
+        if (e.buttons === 0 && window.innerWidth > 600) {
             e.preventDefault(); // Prevent default vertical scroll
-            const scrollAmount = e.deltaY; // Get vertical scroll amount
-            const scrollSpeedMultiplier = 0.8; // Adjust this value for desired scroll speed
-            dashboardsContainer.scrollLeft += scrollAmount * scrollSpeedMultiplier;
+
+            const scrollAmount = e.deltaY;
+            const scrollStep = 200; // 스크롤 한 번에 이동할 픽셀 양을 조절합니다. (크게 하면 더 빨리 이동)
+
+            // Determine target index based on scroll direction
+            let targetIndex = currentDashboardIndex;
+            if (scrollAmount > 0) { // Scroll down -> move right (next dashboard)
+                targetIndex = Math.min(dashboards.length - 1, currentDashboardIndex + 1);
+            } else { // Scroll up -> move left (previous dashboard)
+                targetIndex = Math.max(0, currentDashboardIndex - 1);
+            }
+
+            // Only scroll if the target index is different
+            if (targetIndex !== currentDashboardIndex) {
+                currentDashboardIndex = targetIndex; // Update current index immediately
+                scrollToDashboard(currentDashboardIndex, true); // Use smooth scroll
+                updatePaginationDots(); // Update dots immediately
+            }
         }
     }, { passive: false }); // `passive: false` is required to allow `e.preventDefault()`
 
